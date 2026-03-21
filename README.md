@@ -8,6 +8,9 @@
 
 **Project completed: 2026-03-21**
 
+> **Repository:** https://github.com/fordevices/mp3-organizer-pipeline
+> **User guide:** [DOCS/USER_GUIDE.md](DOCS/USER_GUIDE.md)
+
 | Stage | Status | Session |
 |---|---|---|
 | Design & planning | ✅ Complete | Session 0 |
@@ -1175,6 +1178,27 @@ Observed across 22 real songs (Sessions 2–3) with **86% overall match rate**.
 - **Pre-sort your input folders:** The pipeline reads language from the parent folder
   name (`Input/Tamil/`, `Input/Hindi/`). Mis-sorted files get the wrong language tag
   permanently — the pipeline cannot detect the true language of the audio.
+
+---
+
+## Persistence and interruption safety
+
+`music.db` is a file on disk. It is never wiped, never reset, and never touched by closing
+a terminal window or Ctrl-C. It accumulates permanently across every run, every session,
+and every restart.
+
+| Interruption | What happens | Recovery |
+|---|---|---|
+| Ctrl-C mid-Stage 1 | Files before interruption are `done` or `no_match` in DB | Re-run — processed files skipped by MD5 hash |
+| Ctrl-C mid-Stage 3 | Interrupted file stays `identified` — tag may be partial | Re-run `--stage 3` — file is re-tagged cleanly |
+| Ctrl-C mid-Stage 4 | Interrupted file stays `tagged` — file may or may not have moved | Re-run `--stage 4` — move is retried |
+| Terminal closed | Identical to Ctrl-C — DB is not affected | Re-run same command |
+| `error` status | Stage failed for this file | Automatically retried on next run |
+| `no_match` status | Shazam could not identify file | Held until `--review` |
+
+For a 1000-file collection at the default 2-second sleep, a full Stage 1 run takes ~33 minutes.
+You can run it overnight, interrupt at any point, and resume the next day. Only unprocessed
+files are touched.
 
 ---
 
