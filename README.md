@@ -6,6 +6,8 @@
 
 ## Project status
 
+**Project completed: 2026-03-21**
+
 | Stage | Status | Session |
 |---|---|---|
 | Design & planning | ✅ Complete | Session 0 |
@@ -15,7 +17,7 @@
 | Mutagen ID3 tagger | ✅ Complete | Session 4 — 2026-03-21 |
 | File organizer | ✅ Complete | Session 5 — 2026-03-21 |
 | Orchestrator + run logging | ✅ Complete | Session 6 — 2026-03-21 |
-| End-to-end test + polish | ⬜ Not started | Session 7 |
+| End-to-end test + polish | ✅ Complete | Session 7 — 2026-03-21 |
 
 ---
 
@@ -1024,6 +1026,48 @@ Update README.md status table: Orchestrator + run logging → ✅ Complete.
 
 ---
 
+## Confirmed DB state entering Session 7
+
+Captured 2026-03-21 after Sessions 1–6 completed.
+
+### Song counts
+
+| Status | Count |
+|---|---|
+| `done` | 20 |
+| `no_match` | 5 |
+| **Total** | **25** |
+
+| Language | Count |
+|---|---|
+| Tamil | 12 |
+| Hindi | 8 |
+| English | 5 |
+
+### no_match breakdown
+
+| song_id | File | Note |
+|---|---|---|
+| `max-000014` | `Input/Tamil/Sathileelavathy_MarugoMarugo.mp3` | Real song — Shazam no match |
+| `max-000020` | `Input/Tamil/sattam_naanbaneyennathuuyir.mp3` | Real song — Shazam no match |
+| `max-000023` | `Input/English/test_new_english_01.mp3` | White noise test file |
+| `max-000024` | `Input/Hindi/test_new_hindi_01.mp3` | Pink noise test file |
+| `max-000025` | `Input/Tamil/test_new_tamil_01.mp3` | Brown noise test file |
+
+### Runs table
+
+Two runs recorded (Sessions 6 dry-run and full run). Sessions 1–5 called stage
+functions directly so they have no rows in `runs`.
+
+### What Session 7 must not break
+
+- The 20 `done` songs are in `Music/` with correct paths and ID3 tags.
+  Nothing in Session 7 should re-tag or re-move them.
+- The MD5 dedup in Stage 1 ensures no file is processed twice.
+- The short-file guard (new in Session 7) must set `status="no_match"`, not `"error"`.
+
+---
+
 ### Session 7 — End-to-end test + polish
 
 **What gets built:** Bug fixes, edge case handling, final README update, verification on a real batch
@@ -1079,13 +1123,58 @@ Paste the final Music/ folder tree and the last summary.json.
 
 ## Known issues / limitations
 
-_To be filled in during Session 7._
+- **Shazam DB wrong years:** Shazam sometimes returns wildly incorrect years (observed:
+  `1905` for a 1995 Tamil film). The `--review --flagged` mode catches these with a ⚠
+  warning on any year outside `[1940, current_year]`.
+- **Missing album/year for some tracks:** Older or non-album recordings (especially
+  pre-1990 Tamil film songs) often have no album or year in Shazam's metadata.
+  Affected songs land in `Music/<Language>/Unknown Year/Unknown Album/`.
+  Use `--review --all` to fill these in manually.
+- **Short audio clips crash-loop risk:** Files under ~8 seconds may cause ShazamIO to
+  return an error or hang. Session 7 adds an 8-second duration guard that short-circuits
+  to `no_match` before any API call.
+- **Noise/synthesized audio always no_match:** Shazam fingerprints audio against real
+  recordings; generated tones and white noise cannot match. Test files will always
+  land in `no_match` — delete them from `Input/` when done testing.
+- **`runs` table empty for Sessions 1–5:** The orchestrator (`runner.py`) wasn't built
+  until Session 6. Earlier sessions called stage functions directly. Run counts from
+  those sessions are not recorded in `runs`.
+- **Cover art URL is 400×400 JPEG from Apple Music CDN:** These URLs can expire or
+  change if Apple rotates their CDN keys. Failing to download cover art is non-fatal
+  and logged as a warning; the song is still tagged without the APIC frame.
 
 ---
 
 ## Tips for Tamil / Hindi music matching
 
-_To be filled in during Session 7 based on real-world results._
+Observed across 22 real songs (Sessions 2–3) with **86% overall match rate**.
+
+### What matches well
+
+- **Tamil film songs 1970–2000:** Ilaiyaraaja-scored films are very well indexed.
+  Songs from *Sethu*, *Rettai Vaal Kuruvi*, *Sethupathi IPS*, *Sikappu Rojakkal*
+  all matched cleanly.
+- **Hindi film classics 1970s:** Lata Mangeshkar, Kishore Kumar, Asha Bhosle,
+  Mohammed Rafi — Shazam has excellent coverage. All 7 Hindi test songs matched.
+- **Multi-artist credits:** Shazam returns all credited artists in `subtitle`,
+  separated by `, ` and `&` (e.g., `Ilaiyaraaja, P. Unnikrishnan & Arunmozhi`).
+  These land cleanly in `TPE1`.
+
+### What doesn't match / watch-outs
+
+- **Non-Shazam-indexed Tamil songs:** Two songs from older Sathileelavathy soundtrack
+  returned no_match — likely obscure recordings not in Shazam's DB.
+- **Genre labels are broad:** Tamil songs get genre `"Tamil"` (the language, not a
+  music genre). Hindi songs return `"Bollywood"` or `"Sufi"`. This is Shazam's
+  classification — the pipeline stores it as-is.
+- **Soundtrack album names are verbose:** Apple Music titles include
+  `(Original Motion Picture Soundtrack)` and `- EP` suffixes. These survive
+  `sanitize()` as-is since `()` and `-` are legal filename characters.
+- **Year `1905` / other garbage years:** Seen on at least one track (Maharajanodu).
+  Always run `--review --flagged` after a batch to catch these before tagging.
+- **Pre-sort your input folders:** The pipeline reads language from the parent folder
+  name (`Input/Tamil/`, `Input/Hindi/`). Mis-sorted files get the wrong language tag
+  permanently — the pipeline cannot detect the true language of the audio.
 
 ---
 

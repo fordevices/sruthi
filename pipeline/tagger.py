@@ -17,6 +17,7 @@ from mutagen.id3 import (
 )
 
 from pipeline.db import get_songs_by_status, update_song
+from pipeline.runner import GREEN, RED, RESET
 
 
 # ---------------------------------------------------------------------------
@@ -169,12 +170,12 @@ def run_tagging(dry_run: bool = False) -> dict:
                 suffix = "  (override)"
             elif year_src == "[final_*]" and song.get("final_year") != song.get("shazam_year"):
                 suffix = f"  (year: {year_val} from final_*)"
-            print(f"[{song_id}] ✓ tagged   {title} — {artist}{suffix}")
+            print(f"{GREEN}[{song_id}] ✓ tagged   {title} — {artist}{suffix}{RESET}")
         else:
             errors += 1
             err = song.get("error_msg", "unknown error")
             name = song.get("file_path", "").split("/")[-1]
-            print(f"[{song_id}] ✗ error    {name} — {err}")
+            print(f"{RED}[{song_id}] ✗ error    {name} — {err}{RESET}")
 
     print()
     if dry_run:

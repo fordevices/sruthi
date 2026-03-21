@@ -8,6 +8,15 @@ import os
 import sys
 from datetime import datetime
 
+# ANSI colour constants — disabled automatically when stdout is not a TTY
+# (piped output, log files, CI). Import from here in other modules.
+_C     = sys.stdout.isatty()
+GREEN  = "\033[32m" if _C else ""
+YELLOW = "\033[33m" if _C else ""
+RED    = "\033[31m" if _C else ""
+BOLD   = "\033[1m"  if _C else ""
+RESET  = "\033[0m"  if _C else ""
+
 from pipeline import config
 from pipeline.db import create_run, finish_run
 from pipeline.identify import run_identification
@@ -79,9 +88,9 @@ def run_pipeline(
     logger = setup_run_logging(run_id)
     create_run(run_id, mode="folder", source_path=source_path)
 
-    logger.info(f"=== Run {run_id} | source: {source_path} | stages: {stages} ===")
+    logger.info(f"{BOLD}=== Run {run_id} | source: {source_path} | stages: {stages} ==={RESET}")
     if dry_run:
-        logger.info("[DRY RUN — no files will be written or moved]")
+        logger.info(f"{BOLD}[DRY RUN — no files will be written or moved]{RESET}")
 
     # Accumulated counters
     files_total = 0
@@ -171,6 +180,6 @@ def run_pipeline(
         f"{files_identified} identified, {files_tagged} tagged, "
         f"{files_moved} moved, {files_error} errors — {duration_sec}s"
     )
-    logger.info(f"=== Run complete: {one_liner} ===")
+    logger.info(f"{BOLD}=== Run complete: {one_liner} ==={RESET}")
     logger.info(f"Log:     runs/{run_id}/run.log")
     logger.info(f"Summary: runs/{run_id}/summary.json")

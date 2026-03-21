@@ -43,12 +43,29 @@ def cmd_stats():
             "SELECT status, COUNT(*) n FROM songs GROUP BY status ORDER BY n DESC"
         ):
             print(f"  {row[0]:<14} {row[1]}")
+
         print()
         print("Language breakdown:")
         for row in conn.execute(
             "SELECT language, COUNT(*) n FROM songs GROUP BY language ORDER BY n DESC"
         ):
             print(f"  {row[0]:<14} {row[1]}")
+
+        print()
+        print("Top albums (by song count):")
+        for row in conn.execute(
+            """SELECT COALESCE(NULLIF(final_album,''), NULLIF(shazam_album,''), 'Unknown Album') AS album,
+                      COUNT(*) AS n
+               FROM songs GROUP BY album ORDER BY n DESC LIMIT 5"""
+        ):
+            print(f"  {row[0][:45]:<47} {row[1]}")
+
+        no_match_count = conn.execute(
+            "SELECT COUNT(*) FROM songs WHERE status='no_match'"
+        ).fetchone()[0]
+        if no_match_count:
+            print()
+            print(f"  {no_match_count} file(s) still need review — run: python main.py --review")
     finally:
         conn.close()
 

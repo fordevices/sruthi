@@ -9,6 +9,7 @@ import shutil
 
 from pipeline import config
 from pipeline.db import get_songs_by_status, update_song
+from pipeline.runner import GREEN, RED, RESET
 from pipeline.tagger import resolve
 
 # ---------------------------------------------------------------------------
@@ -132,11 +133,11 @@ def run_organization(dry_run: bool = False) -> dict:
             rel = os.path.relpath(song.get("final_path") or build_target_path(song))
             title  = resolve(song.get("final_title"),  song.get("shazam_title"),  "")
             artist = resolve(song.get("final_artist"), song.get("shazam_artist"), "")
-            print(f"[{song_id}] ✓ moved   → {rel}")
+            print(f"{GREEN}[{song_id}] ✓ moved   → {rel}{RESET}")
         else:
             errors += 1
             err = song.get("error_msg", "unknown error")
-            print(f"[{song_id}] ✗ error   → {err}")
+            print(f"{RED}[{song_id}] ✗ error   → {err}{RESET}")
 
     print()
     if dry_run:

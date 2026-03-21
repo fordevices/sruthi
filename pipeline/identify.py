@@ -3,6 +3,7 @@ import hashlib
 import os
 from pathlib import Path
 
+from mutagen.mp3 import MP3, HeaderNotFoundError
 from shazamio import Shazam
 
 from pipeline import config
@@ -12,6 +13,7 @@ from pipeline.db import (
     song_exists_by_hash,
     update_song,
 )
+from pipeline.runner import GREEN, YELLOW, RED, RESET
 
 
 def compute_md5(file_path: str) -> str:
@@ -109,6 +111,18 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
     # 3. Insert as pending
     song_id = insert_song(file_path, file_hash, language, run_id)
 
+    # 3b. Short-file guard — files under 8s cannot be reliably fingerprinted
+    try:
+        audio = MP3(file_path)
+        duration = audio.info.length
+    except HeaderNotFoundError:
+        duration = 999  # not a valid MP3 — let Shazam attempt it and fail gracefully
+
+    if duration < 8.0:
+        update_song(song_id, status="no_match",
+                    error_msg=f"too short for fingerprinting ({duration:.1f}s)")
+        return _get_song_by_id(song_id)
+
     # 4 & 5. Shazam call + parse
     try:
         out = await shazam.recognize(file_path)
@@ -168,14 +182,18 @@ def run_identification(source_path: str, run_id: str) -> dict:
                 if status == "identified":
                     title = song.get("shazam_title", "")
                     artist = song.get("shazam_artist", "")
-                    print(f"[{song_id}] ✓ identified  ({i}/{total}) {lang} | {title} — {artist}")
+                    print(f"{GREEN}[{song_id}] ✓ identified  ({i}/{total}) {lang} | {title} — {artist}{RESET}")
                     counts["identified"] += 1
                 elif status == "no_match":
-                    print(f"[{song_id}] ✗ no match    ({i}/{total}) {lang} | {name}")
+                    err = song.get("error_msg") or ""
+                    if "too short" in err:
+                        print(f"{YELLOW}[{song_id}] ⚠ too short   ({i}/{total}) {lang} | {name} — {err}{RESET}")
+                    else:
+                        print(f"{YELLOW}[{song_id}] ✗ no match    ({i}/{total}) {lang} | {name}{RESET}")
                     counts["no_match"] += 1
                 elif status == "error":
                     err = song.get("error_msg", "")
-                    print(f"[{song_id}] ! error       ({i}/{total}) {lang} | {name} — {err}")
+                    print(f"{RED}[{song_id}] ! error       ({i}/{total}) {lang} | {name} — {err}{RESET}")
                     counts["errors"] += 1
 
             if i < total:
