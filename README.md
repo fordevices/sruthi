@@ -14,7 +14,7 @@
 | Manual review CLI | ✅ Complete | Session 3 — 2026-03-21 |
 | Mutagen ID3 tagger | ✅ Complete | Session 4 — 2026-03-21 |
 | File organizer | ✅ Complete | Session 5 — 2026-03-21 |
-| Orchestrator + run logging | ⬜ Not started | Session 6 |
+| Orchestrator + run logging | ✅ Complete | Session 6 — 2026-03-21 |
 | End-to-end test + polish | ⬜ Not started | Session 7 |
 
 ---
@@ -913,6 +913,49 @@ Check that Music/ folder structure matches the README pattern.
 Paste the tree output: find Music/ -name "*.mp3"
 Update README.md status table: File organizer → ✅ Complete.
 ```
+
+---
+
+## Known state coming into Session 6
+
+Captured 2026-03-21 after Sessions 1–5 completed.
+
+### DB state
+
+| Status | Count |
+|---|---|
+| `done` | 20 |
+| `no_match` | 2 |
+| **Total** | **22** |
+
+| Language | Count |
+|---|---|
+| Tamil | 11 |
+| Hindi | 7 |
+| English | 4 |
+
+### Remaining Input files
+
+The 2 no_match files are still in `Input/` (Stage 4 only moves `tagged` files):
+- `Input/Tamil/Sathileelavathy_MarugoMarugo.mp3`
+- `Input/Tamil/sattam_naanbaneyennathuuyir.mp3`
+
+### runs table
+
+Empty — Sessions 2–5 called stage functions directly, bypassing `create_run`.
+Session 6 is the first session that writes to the `runs` table.
+
+### Music/ folder
+
+20 files on disk, all with correct ID3 tags and paths. Structure confirmed in Session 5.
+
+### What Session 6 must not do
+
+- Must not re-identify, re-tag, or re-move the 20 done files.
+  The MD5 dedup in `identify_file` guarantees Stage 1 skips them.
+  Stages 3 and 4 read from status (`identified` / `tagged`) so they also find nothing.
+- A `--dry-run` pass on the existing `Input/` should show all 22 skipped in Stage 1
+  and 0 files processed in Stages 3 and 4.
 
 ---
 

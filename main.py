@@ -1,8 +1,12 @@
 import argparse
-from datetime import datetime
+import sqlite3
 
 from pipeline.db import get_connection
 
+
+# ---------------------------------------------------------------------------
+# --check
+# ---------------------------------------------------------------------------
 
 def cmd_check():
     conn = get_connection()
@@ -11,84 +15,120 @@ def cmd_check():
             "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
         ).fetchall()
         tables = [r[0] for r in rows]
-        print("Tables in music.db:", tables)
+        print("Tables:", tables)
         if "songs" in tables and "runs" in tables:
             print("DB OK")
         else:
             print("DB ERROR: missing tables")
+            return
+        total = conn.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
+        print(f"Total songs: {total}")
+        for row in conn.execute(
+            "SELECT status, COUNT(*) n FROM songs GROUP BY status ORDER BY status"
+        ):
+            print(f"  {row[0]:<14} {row[1]}")
     finally:
         conn.close()
 
 
-def cmd_stage1(source: str):
-    from pipeline.identify import run_identification
-    run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    print(f"Run ID: {run_id}")
-    summary = run_identification(source, run_id)
-    print()
-    print("Summary:", summary)
+# ---------------------------------------------------------------------------
+# --stats
+# ---------------------------------------------------------------------------
+
+def cmd_stats():
+    conn = get_connection()
+    try:
+        print("Status breakdown:")
+        for row in conn.execute(
+            "SELECT status, COUNT(*) n FROM songs GROUP BY status ORDER BY n DESC"
+        ):
+            print(f"  {row[0]:<14} {row[1]}")
+        print()
+        print("Language breakdown:")
+        for row in conn.execute(
+            "SELECT language, COUNT(*) n FROM songs GROUP BY language ORDER BY n DESC"
+        ):
+            print(f"  {row[0]:<14} {row[1]}")
+    finally:
+        conn.close()
 
 
-def cmd_stage3(dry_run: bool):
-    from pipeline.tagger import run_tagging
-    run_tagging(dry_run=dry_run)
-
-
-def cmd_stage4(dry_run: bool):
-    from pipeline.organizer import run_organization
-    run_organization(dry_run=dry_run)
-
-
-def cmd_review(mode: str, limit: int):
-    from pipeline.review import run_review
-    run_review(mode=mode, limit=limit)
-
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Music Pipeline")
+    parser = argparse.ArgumentParser(
+        description="Music Pipeline",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     parser.add_argument("source", nargs="?", help="File or folder to process")
-    parser.add_argument("--check", action="store_true", help="Verify DB and exit")
-    parser.add_argument("--stage", type=int, choices=[1, 2, 3, 4], help="Run a single stage")
-    parser.add_argument("--dry-run", action="store_true", help="Preview actions without writing")
-    parser.add_argument("--review", action="store_true", help="Interactive review of unmatched files")
+    parser.add_argument("--stage", type=int, choices=[1, 2, 3, 4],
+                        help="Run only a single stage (1–4)")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Preview actions without writing or moving files")
+    parser.add_argument("--review-after", action="store_true",
+                        help="Run interactive Stage 2 review after Stage 1")
+    parser.add_argument("--review", action="store_true",
+                        help="Interactive review of unmatched files (standalone)")
     parser.add_argument("--all", dest="review_all", action="store_true",
                         help="Review all identified + no_match songs")
     parser.add_argument("--flagged", action="store_true",
                         help="Review only songs with suspicious year (⚠)")
     parser.add_argument("--limit", type=int, default=None,
-                        help="Max number of songs to review")
+                        help="Max songs to review")
+    parser.add_argument("--check", action="store_true",
+                        help="Verify DB tables and print row counts")
+    parser.add_argument("--stats", action="store_true",
+                        help="Print DB summary by status and language")
+
     args = parser.parse_args()
 
+    # ── Standalone commands ──────────────────────────────────────────────
     if args.check:
         cmd_check()
         return
 
+    if args.stats:
+        cmd_stats()
+        return
+
     if args.review:
+        from pipeline.review import run_review
         if args.flagged:
             mode = "flagged"
         elif args.review_all:
             mode = "all"
         else:
             mode = "no_match"
-        cmd_review(mode=mode, limit=args.limit)
+        run_review(mode=mode, limit=args.limit)
         return
 
-    if args.stage == 3:
-        cmd_stage3(dry_run=args.dry_run)
-        return
-
-    if args.stage == 4:
-        cmd_stage4(dry_run=args.dry_run)
+    # ── Pipeline commands (need source or stage-only) ────────────────────
+    if args.stage in (3, 4) and not args.source:
+        # Stage 3 and 4 read from DB — source not required
+        from pipeline.runner import run_pipeline
+        run_pipeline(
+            source_path="(db-only)",
+            stages=[args.stage],
+            dry_run=args.dry_run,
+        )
         return
 
     if not args.source:
         parser.print_help()
         return
 
-    if args.stage == 1:
-        cmd_stage1(args.source)
-    else:
-        parser.print_help()
+    from pipeline.runner import run_pipeline
+
+    stages = [args.stage] if args.stage else [1, 2, 3, 4]
+
+    run_pipeline(
+        source_path=args.source,
+        stages=stages,
+        dry_run=args.dry_run,
+        review_after=args.review_after,
+    )
 
 
 if __name__ == "__main__":
