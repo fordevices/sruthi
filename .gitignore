@@ -1,0 +1,19 @@
+# MP3 files — excluded, but folder structure is preserved via .gitkeep
+*.mp3
+
+# Runtime database — generated on first run
+music.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Claude Code memory
+.claude/
+
+# Organised output (auto-created at runtime)
+Music/
+
+# Run logs (auto-created at runtime)
+runs/
