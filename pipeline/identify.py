@@ -102,20 +102,26 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
     Full Stage 1 pipeline for one file. Returns {} if the file was skipped
     (already in DB). Returns the updated song row dict otherwise.
     """
-    # 1. Dedup check — same file submitted twice
+    # 1. Dedup check — same file already in DB
     file_hash = compute_md5(file_path)
     if song_exists_by_hash(file_hash):
-        # Track that this exact file was seen again
         conn = get_connection()
         try:
             row = conn.execute(
-                "SELECT song_id FROM songs WHERE file_hash = ?", (file_hash,)
+                "SELECT song_id, file_path, status FROM songs WHERE file_hash = ?",
+                (file_hash,)
             ).fetchone()
             if row:
-                increment_duplicate_count(row["song_id"])
+                if row["file_path"] != file_path and row["status"] != "done":
+                    # File was renamed — update stored path so passes can find it
+                    update_song(row["song_id"], file_path=file_path)
+                    print(f"[PATH]  path updated for {row['song_id']}: {file_path}")
+                else:
+                    # True duplicate of a done song
+                    increment_duplicate_count(row["song_id"])
+                    print(f"[SKIP]  already in DB: {file_path}")
         finally:
             conn.close()
-        print(f"[SKIP] already in DB (duplicate file): {file_path}")
         return {}
 
     # 2. Language
