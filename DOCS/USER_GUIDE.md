@@ -345,6 +345,68 @@ python3 main.py --review --limit 20   ← review only the next 20 unmatched file
 
 ---
 
+## AcoustID fallback pass
+
+For songs that Shazam could not identify and that have no collection pattern in their
+filename, you can run a second identification pass using AcoustID + MusicBrainz.
+
+### Prerequisites
+
+1. **Install Chromaprint** (the `fpcalc` binary):
+   ```
+   macOS:   brew install chromaprint
+   Linux:   sudo apt install libchromaprint-tools
+   Windows: download fpcalc from https://acoustid.org/chromaprint
+   ```
+
+2. **Register for a free AcoustID API key** at https://acoustid.org (takes 2 minutes, no payment).
+
+3. **Set the environment variable:**
+   ```
+   export ACOUSTID_API_KEY=your_key_here
+   ```
+
+### Running the pass
+
+```
+python3 main.py --acoustid
+```
+
+For each `no_match` file, the pipeline will:
+- Fingerprint the audio using `fpcalc`
+- Query AcoustID and retrieve the best matching recording from MusicBrainz
+- Show you the proposed match with a confidence percentage
+
+```
+────────────────────────────────────────────
+Song ID  : max-000014
+File     : Input/Tamil/mystery.mp3
+Language : Tamil
+── AcoustID match  (confidence: 94%) ──
+Title    : Vaseegara
+Artist   : Bombay Jayashri
+Album    : Minnale
+Year     : 2001
+────────────────────────────────────────────
+[a] Accept  [e] Edit  [p] Play  [s] Skip  [q] Quit
+```
+
+| Key | Action |
+|---|---|
+| `a` | Accept the proposed match as-is |
+| `e` | Edit individual fields before saving |
+| `p` | Play the file, then return to the prompt |
+| `s` | Skip this file (stays `no_match`) |
+| `q` | Quit, resume later |
+
+After the pass, run `--move` to tag and move the newly identified files:
+
+```
+python3 main.py --move
+```
+
+---
+
 ## Output folder structure
 
 Organised files land in `Music/` using this pattern:
@@ -404,6 +466,7 @@ hyphens — are preserved exactly.
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs to `Music/` (stages 3+4, no source needed) |
 | `python3 main.py --move --dry-run` | Preview what `--move` would do without changing anything |
+| `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 
 ---
