@@ -175,6 +175,16 @@ Missing fields fall back gracefully:
 - No album → `Unknown Album`
 - No title → `song_id` (e.g. `max-000042`)
 
+**Duplicate songs** (same title+artist+language as an already-done song) go to:
+
+```
+Music/<Language>/Duplicates/<Album>/<Title> (<song_id>).mp3
+```
+
+The song_id suffix distinguishes multiple duplicates of the same track. The original
+song's `duplicate_count` in the DB is incremented each time a duplicate is found.
+The `--review` command shows a duplicate count warning on affected songs.
+
 **Collection-fix songs** (identified from filename patterns, no year known) go to:
 
 ```

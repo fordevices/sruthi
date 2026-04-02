@@ -77,9 +77,12 @@ def format_song_header(song: dict) -> str:
 
     year_warn = _year_warning(shazam_year)
 
+    dup_count = song.get("duplicate_count") or 0
+    dup_note  = f"  ⓓ {dup_count} duplicate(s) in Music/Duplicates/" if dup_count else ""
+
     lines = [
         _DIVIDER,
-        f"Song ID  : {song_id}",
+        f"Song ID  : {song_id}{dup_note}",
         f"File     : {file_path}",
         f"Language : {language}",
         f"Status   : {status}",

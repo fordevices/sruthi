@@ -453,6 +453,16 @@ Music/Hindi/1974/Roti Kapda Aur Makaan/Aaj Ki Raat.mp3
 Music/English/1999/Issues/Evolution.mp3
 ```
 
+**Duplicate songs** (same title+artist+language already exists in `Music/`) are automatically
+routed to a `Duplicates/` folder for manual comparison:
+
+```
+Music/Tamil/Duplicates/Minnale/Vaseegara (max-000031).mp3
+```
+
+The original stays in its normal path. Open both files in a player, keep the
+better-quality one, and delete the other.
+
 Missing fields fall back gracefully:
 
 ```

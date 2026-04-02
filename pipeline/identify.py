@@ -11,6 +11,7 @@ from pipeline import config
 from pipeline.collection import extract_collection_clue
 from pipeline.db import (
     get_connection,
+    increment_duplicate_count,
     insert_song,
     song_exists_by_hash,
     update_song,
@@ -101,10 +102,20 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
     Full Stage 1 pipeline for one file. Returns {} if the file was skipped
     (already in DB). Returns the updated song row dict otherwise.
     """
-    # 1. Dedup check
+    # 1. Dedup check — same file submitted twice
     file_hash = compute_md5(file_path)
     if song_exists_by_hash(file_hash):
-        print(f"[SKIP] already in DB: {file_path}")
+        # Track that this exact file was seen again
+        conn = get_connection()
+        try:
+            row = conn.execute(
+                "SELECT song_id FROM songs WHERE file_hash = ?", (file_hash,)
+            ).fetchone()
+            if row:
+                increment_duplicate_count(row["song_id"])
+        finally:
+            conn.close()
+        print(f"[SKIP] already in DB (duplicate file): {file_path}")
         return {}
 
     # 2. Language

@@ -181,6 +181,44 @@ def finish_run(
         conn.close()
 
 
+def find_done_duplicate(title: str, artist: str, language: str) -> dict | None:
+    """
+    Return the first done song with matching title+artist+language, or None.
+    Comparison is case-insensitive and whitespace-trimmed.
+    Used by organizer.py to detect duplicate songs before moving.
+    """
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            """SELECT * FROM songs
+               WHERE status = 'done'
+               AND LOWER(TRIM(final_title))  = LOWER(TRIM(?))
+               AND LOWER(TRIM(final_artist)) = LOWER(TRIM(?))
+               AND LOWER(language)           = LOWER(?)
+               ORDER BY created_at ASC LIMIT 1""",
+            (title, artist, language),
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def increment_duplicate_count(song_id: str) -> None:
+    """Increment duplicate_count by 1 for the given song."""
+    conn = get_connection()
+    try:
+        conn.execute(
+            """UPDATE songs
+               SET duplicate_count = COALESCE(duplicate_count, 0) + 1,
+                   updated_at = ?
+               WHERE song_id = ?""",
+            (_now(), song_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def get_run_summary(run_id: str) -> dict:
     conn = get_connection()
     try:
