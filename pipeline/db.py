@@ -37,7 +37,12 @@ def get_connection() -> sqlite3.Connection:
             run_id          TEXT,
             created_at      TEXT,
             updated_at      TEXT,
-            error_msg       TEXT
+            error_msg       TEXT,
+            meta_before     TEXT,
+            meta_after      TEXT,
+            duplicate_count INTEGER,
+            id_source       TEXT,
+            last_attempt_at TEXT
         );
 
         CREATE TABLE IF NOT EXISTS runs (
@@ -53,6 +58,21 @@ def get_connection() -> sqlite3.Connection:
         );
     """)
     conn.commit()
+
+    # Migrate existing databases that predate these columns.
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(songs)")}
+    migrations = {
+        "meta_before":     "ALTER TABLE songs ADD COLUMN meta_before     TEXT",
+        "meta_after":      "ALTER TABLE songs ADD COLUMN meta_after      TEXT",
+        "duplicate_count": "ALTER TABLE songs ADD COLUMN duplicate_count INTEGER",
+        "id_source":       "ALTER TABLE songs ADD COLUMN id_source       TEXT",
+        "last_attempt_at": "ALTER TABLE songs ADD COLUMN last_attempt_at TEXT",
+    }
+    for col, stmt in migrations.items():
+        if col not in existing:
+            conn.execute(stmt)
+    conn.commit()
+
     return conn
 
 
