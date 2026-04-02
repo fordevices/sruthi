@@ -122,6 +122,8 @@ def main():
                         help="Print DB summary by status and language")
     parser.add_argument("--zeroise", action="store_true",
                         help="Clear all songs and runs from the database (asks for confirmation)")
+    parser.add_argument("--move", action="store_true",
+                        help="Tag and move all identified songs to Music/ (stages 3+4, no source needed)")
 
     args = parser.parse_args()
 
@@ -132,6 +134,11 @@ def main():
 
     if args.zeroise:
         cmd_zeroise()
+        return
+
+    if args.move:
+        from pipeline.runner import run_pipeline
+        run_pipeline(source_path="(db-only)", stages=[3, 4], dry_run=args.dry_run)
         return
 
     if args.stats:

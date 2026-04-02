@@ -3,6 +3,7 @@ Stage 3 — Mutagen ID3 tag writer.
 Field priority and ID3 patterns follow the README "Mutagen ID3 tagging reference" section.
 """
 
+import json
 import requests
 from mutagen.id3 import (
     APIC,
@@ -88,6 +89,15 @@ def tag_file(song: dict, dry_run: bool = False) -> bool:
         except ID3NoHeaderError:
             tags = ID3()
 
+        # Snapshot existing tags before overwriting
+        meta_before = json.dumps({
+            "title":  str(tags.get("TIT2", "")),
+            "artist": str(tags.get("TPE1", "")),
+            "album":  str(tags.get("TALB", "")),
+            "year":   str(tags.get("TDRC", "")),
+            "genre":  str(tags.get("TCON", "")),
+        })
+
         # Always write title and artist (required for any useful tag)
         if title:
             tags["TIT2"] = TIT2(encoding=3, text=title)
@@ -121,7 +131,11 @@ def tag_file(song: dict, dry_run: bool = False) -> bool:
                 print(f"  [{song_id}] cover art skipped: {cover_err}")
 
         tags.save(file_path)
-        update_song(song_id, status="tagged")
+        meta_after = json.dumps({
+            "title": title, "artist": artist, "album": album,
+            "year": year, "genre": genre,
+        })
+        update_song(song_id, status="tagged", meta_before=meta_before, meta_after=meta_after)
         return True
 
     except Exception as e:

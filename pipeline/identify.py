@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from mutagen.mp3 import MP3, HeaderNotFoundError
@@ -128,6 +129,7 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
         out = await shazam.recognize(file_path)
         result = parse_shazam_response(out)
 
+        now = datetime.now(timezone.utc).isoformat()
         if result is not None:
             update_song(
                 song_id,
@@ -144,10 +146,12 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
                 final_album=result["album"],
                 final_year=result["year"],
                 final_genre=result["genre"],
+                id_source="shazam",
+                last_attempt_at=now,
                 run_id=run_id,
             )
         else:
-            update_song(song_id, status="no_match", run_id=run_id)
+            update_song(song_id, status="no_match", last_attempt_at=now, run_id=run_id)
 
     except Exception as e:
         update_song(song_id, status="error", error_msg=str(e), run_id=run_id)

@@ -10,6 +10,14 @@ durability. There are two tables: `songs` (one row per MP3 file ever discovered)
 `pipeline/db.py`. Never run raw `UPDATE` or `DELETE` against the live database from the
 command line — if you need to inspect it, use read-only `SELECT` queries only.
 
+To clear the database completely (e.g. between test runs), use the safe CLI command:
+
+```bash
+python3 main.py --zeroise
+```
+
+This will ask you to type `YES` before deleting anything.
+
 ---
 
 ## Table: `songs`
@@ -40,6 +48,11 @@ command line — if you need to inspect it, use read-only `SELECT` queries only.
 | `created_at` | TEXT | ISO timestamp — when first discovered |
 | `updated_at` | TEXT | ISO timestamp — last status change |
 | `error_msg` | TEXT | Last error message if status = `error` |
+| `meta_before` | TEXT | JSON snapshot of ID3 tags in the file before Stage 3 wrote new ones |
+| `meta_after` | TEXT | JSON snapshot of the tag values actually written by Stage 3 |
+| `duplicate_count` | INTEGER | Number of duplicate files found for this entry (set by issue #5) |
+| `id_source` | TEXT | Which mechanism identified this file: `shazam`, `acoustid`, `manual`, `collection-fix` |
+| `last_attempt_at` | TEXT | ISO timestamp of the most recent identification attempt |
 
 ---
 

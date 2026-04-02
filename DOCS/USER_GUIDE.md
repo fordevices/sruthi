@@ -390,6 +390,9 @@ hyphens — are preserved exactly.
 | `python3 main.py --review --limit N` | Review only next N unmatched files |
 | `python3 main.py --stats` | Print DB summary — no files touched |
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
+| `python3 main.py --move` | Tag and move all identified songs to `Music/` (stages 3+4, no source needed) |
+| `python3 main.py --move --dry-run` | Preview what `--move` would do without changing anything |
+| `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 
 ---
 
