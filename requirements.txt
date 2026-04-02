@@ -1,3 +1,4 @@
 shazamio
 mutagen
 requests
+pyacoustid

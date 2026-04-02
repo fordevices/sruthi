@@ -126,6 +126,8 @@ def main():
                         help="Tag and move all identified songs to Music/ (stages 3+4, no source needed)")
     parser.add_argument("--filename-match", action="store_true", dest="filename_match",
                         help="Filename search pass: query MusicBrainz with cleaned filenames, review interactively")
+    parser.add_argument("--acoustid", action="store_true",
+                        help="AcoustID fallback pass: fingerprint no_match songs and review interactively")
 
     args = parser.parse_args()
 
@@ -146,6 +148,9 @@ def main():
     if args.filename_match:
         from pipeline.filename_pass import run_filename_pass
         run_filename_pass()
+    if args.acoustid:
+        from pipeline.acoustid_pass import run_acoustid_pass
+        run_acoustid_pass()
         return
 
     if args.stats:
