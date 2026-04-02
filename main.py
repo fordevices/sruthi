@@ -124,6 +124,8 @@ def main():
                         help="Clear all songs and runs from the database (asks for confirmation)")
     parser.add_argument("--move", action="store_true",
                         help="Tag and move all identified songs to Music/ (stages 3+4, no source needed)")
+    parser.add_argument("--filename-match", action="store_true", dest="filename_match",
+                        help="Filename search pass: query MusicBrainz with cleaned filenames, review interactively")
 
     args = parser.parse_args()
 
@@ -139,6 +141,11 @@ def main():
     if args.move:
         from pipeline.runner import run_pipeline
         run_pipeline(source_path="(db-only)", stages=[3, 4], dry_run=args.dry_run)
+        return
+
+    if args.filename_match:
+        from pipeline.filename_pass import run_filename_pass
+        run_filename_pass()
         return
 
     if args.stats:

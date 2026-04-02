@@ -345,6 +345,47 @@ python3 main.py --review --limit 20   ← review only the next 20 unmatched file
 
 ---
 
+## Filename search pass
+
+For files that Shazam failed on, a third pass searches MusicBrainz using the
+cleaned filename as a text query. No API key or binary dependency required.
+
+```
+python3 main.py --filename-match
+```
+
+For each `no_match` file the pipeline cleans the filename and shows up to 3 candidates:
+
+```
+────────────────────────────────────────────
+Song ID  : max-000021
+File     : Input/Hindi/01_o_saathi_re.mp3
+Language : Hindi
+Search   : 'o saathi re'
+── MusicBrainz candidates ──
+  [1]  92%  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
+  [2]  74%  O Saathi Re — Lata Mangeshkar  |  Compilation  1985
+  [3]  61%  O Saathi Re (Remix) — Various  |  Remix Album
+────────────────────────────────────────────
+[1/2/3] Pick  [e] Edit manually  [p] Play  [s] Skip  [q] Quit
+```
+
+| Key | Action |
+|---|---|
+| `1` / `2` / `3` | Accept that candidate as-is |
+| `e` | Enter metadata manually (Title \| Artist \| Album \| Year) |
+| `p` | Play the file, then return to the prompt |
+| `s` | Skip (file stays `no_match`) |
+| `q` | Quit, resume later |
+
+After the pass, run `--move` to tag and move newly identified files:
+
+```
+python3 main.py --move
+```
+
+---
+
 ## Output folder structure
 
 Organised files land in `Music/` using this pattern:
@@ -404,6 +445,7 @@ hyphens — are preserved exactly.
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs to `Music/` (stages 3+4, no source needed) |
 | `python3 main.py --move --dry-run` | Preview what `--move` would do without changing anything |
+| `python3 main.py --filename-match` | Filename search pass: query MusicBrainz with cleaned filenames, review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 
 ---

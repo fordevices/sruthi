@@ -31,6 +31,11 @@ and write to `music.db` goes through a function in this module. No other module 
 SQL. Exports: `get_connection`, `generate_song_id`, `insert_song`, `update_song`,
 `get_songs_by_status`, `song_exists_by_hash`, `create_run`, `finish_run`, `get_run_summary`.
 
+**`pipeline/filename_pass.py`** — Filename-based identification (issue #3). Cleans
+filenames (strips track numbers, underscores, brackets), searches MusicBrainz text
+search API, and presents up to 3 candidates for interactive user verification.
+No API key required. Exports `run_filename_pass()`.
+
 **`pipeline/collection.py`** — Collection-fix detection. Applies regex patterns to
 filenames to extract song title and album name from conventions like `(from Minnale)` or
 `[from Kadal]`. Called by `identify.py` as a fallback when Shazam returns no match.
@@ -72,6 +77,7 @@ mp3-organizer-pipeline/
 │   ├── __init__.py
 │   ├── config.py          # Constants, paths, tunable settings
 │   ├── collection.py      # Collection-fix detection (filename pattern extraction)
+│   ├── filename_pass.py   # MusicBrainz text search fallback (interactive, issue #3)
 │   ├── db.py              # All SQLite operations (single source of truth)
 │   ├── identify.py        # Stage 1 — ShazamIO recognition + collection-fix fallback
 │   ├── review.py          # Stage 2 — Interactive manual review CLI
@@ -227,6 +233,7 @@ runs/2026-03-21_14-32-00/
 | `python3 main.py --stats` | Print DB summary — no files touched |
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs (stages 3+4, no source needed) |
+| `python3 main.py --filename-match` | Filename search pass: query MusicBrainz, review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 
 ---
