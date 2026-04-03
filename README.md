@@ -6,6 +6,57 @@
 
 ---
 
+## From a pile of files to a clean library
+
+Say you have hundreds of MP3s scattered across a hard drive — Tamil classics, old Bollywood tracks, some English songs — most with filenames like `track01.mp3` or `sattam_naanbaneyennathuuyir.mp3`. Here is what you do.
+
+**1. Sort by language, drop them in.**
+Create language folders inside `Input/` and copy your files there. Filenames don't matter at all — that's the whole point.
+```
+Input/Tamil/    Input/Hindi/    Input/English/    Input/Other/
+```
+
+**2. Run it. Shazam identifies most files automatically.**
+```bash
+python3 main.py Input/
+```
+The pipeline sends a short audio fingerprint of each file to Shazam's database. No API key needed. For mainstream Tamil, Hindi, and English music expect 80–90% of files to be matched instantly — title, artist, album, year all filled in. Each matched file gets its ID3 tags written and is moved to `Music/<Language>/<Year>/<Album>/` in one pass.
+
+**3. Some files won't match. That's normal.**
+Recordings not in Shazam's database, older tracks, or live versions get saved as `no_match` and held for the next steps. Run `python3 main.py --stats` to see how many there are.
+
+**4. Try the filename pass — no sign-up needed.**
+The pipeline cleans up each unmatched filename and searches MusicBrainz, the world's largest open music database:
+```bash
+python3 main.py --filename-match
+```
+For each file you see up to 3 candidates and pick the right one. No account or API key required. This resolves a large chunk of what Shazam missed.
+
+**5. Optionally, try the AcoustID pass — deeper fingerprinting, free API key.**
+AcoustID uses a different audio fingerprint algorithm that catches many songs Shazam misses. It requires a free API key from [acoustid.org](https://acoustid.org) (under 2 minutes to register) and the `fpcalc` binary:
+```bash
+export ACOUSTID_API_KEY=your_key_here
+python3 main.py --acoustid
+```
+You can skip this step entirely if you'd rather not register — go straight to manual review instead.
+
+**6. For everything left, type the metadata yourself.**
+```bash
+python3 main.py --review
+```
+The tool plays each file and lets you type `Title | Artist | Album | Year`. Skip any file you want to come back to later.
+
+**7. Move everything that's now identified.**
+After any of the steps above identify new files, run:
+```bash
+python3 main.py --move
+```
+This writes the ID3 tags and moves all newly identified files into `Music/` — the same organised folder structure as the original run.
+
+When you're done, every file you dropped into `Input/` has either been organised into `Music/` with full tags, or is still sitting in `Input/` clearly marked in the database as needing attention.
+
+---
+
 ## What it does
 
 Takes a folder of unknown, badly-named MP3s and runs them through a four-stage pipeline:
