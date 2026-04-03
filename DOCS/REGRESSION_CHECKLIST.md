@@ -127,6 +127,18 @@ All 7 checks must pass. Any failure → file a bug before tagging the release.
 
 ---
 
+## How to re-run this checklist in a future session
+
+Start a new Claude Code session in this repo and send:
+
+> "Run the regression checklist in DOCS/REGRESSION_CHECKLIST.md and report each result.
+> Capture the results in a new DOCS/REGRESSION_RESULTS_<date>.md file and push it."
+
+Claude will execute each check, report PASS/FAIL per item, file any bugs found, and push
+the results document. Do this before every release tag.
+
+---
+
 ## Links
 
 [System Testing Guide](SYSTEM_TESTING.md) | [Test Results](TEST_RESULTS.md) | [Architecture](ARCHITECTURE.md)
