@@ -1,12 +1,12 @@
 """
-Filename-based identification — issue #3.
+Metadata search pass — issue #3 (renamed from filename pass).
 
 Third identification pass for files that Shazam and AcoustID both failed on.
-Cleans the filename and searches the MusicBrainz text search API for candidate
-recordings. Presents up to 3 matches for manual verification with playback.
+Searches MusicBrainz text search API using the best available text signals:
+existing ID3 tags (title, artist) are preferred over the cleaned filename.
 
 No API key or binary dependency required — MusicBrainz has a free, open API.
-Sets id_source='filename-match' on acceptance.
+Sets id_source='metadata-search' on acceptance.
 """
 
 import os

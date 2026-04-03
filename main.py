@@ -124,8 +124,8 @@ def main():
                         help="Clear all songs and runs from the database (asks for confirmation)")
     parser.add_argument("--move", action="store_true",
                         help="Tag and move all identified songs to Music/ (stages 3+4, no source needed)")
-    parser.add_argument("--filename-match", action="store_true", dest="filename_match",
-                        help="Filename search pass: query MusicBrainz with cleaned filenames, review interactively")
+    parser.add_argument("--metadata-search", action="store_true", dest="metadata_search",
+                        help="Metadata search pass: query MusicBrainz and iTunes using ID3 tags and cleaned filename, review interactively")
     parser.add_argument("--acoustid", action="store_true",
                         help="AcoustID fallback pass: fingerprint no_match songs and review interactively")
 
@@ -145,7 +145,7 @@ def main():
         run_pipeline(source_path="(db-only)", stages=[3, 4], dry_run=args.dry_run)
         return
 
-    if args.filename_match:
+    if args.metadata_search:
         from pipeline.filename_pass import run_filename_pass
         run_filename_pass()
     if args.acoustid:

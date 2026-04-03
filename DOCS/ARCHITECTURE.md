@@ -31,10 +31,15 @@ and write to `music.db` goes through a function in this module. No other module 
 SQL. Exports: `get_connection`, `generate_song_id`, `insert_song`, `update_song`,
 `get_songs_by_status`, `song_exists_by_hash`, `create_run`, `finish_run`, `get_run_summary`.
 
-**`pipeline/filename_pass.py`** — Filename-based identification (issue #3). Cleans
-filenames (strips track numbers, underscores, brackets), searches MusicBrainz text
-search API, and presents up to 3 candidates for interactive user verification.
-No API key required. Exports `run_filename_pass()`.
+**`pipeline/filename_pass.py`** — Metadata search pass (issue #3). Uses the best
+available text signals to search for a recording: existing ID3 tags (`TIT2` title,
+`TPE1` artist) are read from the file first and preferred over the cleaned filename,
+which is used only as a fallback when tags are absent or empty. Searches MusicBrainz
+text search API and presents up to 3 candidates for interactive user verification.
+No API key required. Exports `run_metadata_search()`.
+
+See [Metadata search strategy](#metadata-search-strategy) below for the full query
+cascade and source selection rationale.
 **`pipeline/acoustid_pass.py`** — AcoustID + MusicBrainz fallback identification (issue #2).
 Fingerprints files with `fpcalc`, queries the AcoustID API, fetches recording metadata from
 MusicBrainz, and presents matches interactively for user verification. Requires `fpcalc`
@@ -248,9 +253,58 @@ runs/2026-03-21_14-32-00/
 | `python3 main.py --stats` | Print DB summary — no files touched |
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs (stages 3+4, no source needed) |
-| `python3 main.py --filename-match` | Filename search pass: query MusicBrainz, review interactively |
+| `python3 main.py --metadata-search` | Metadata search pass: query MusicBrainz using ID3 tags + filename, review interactively |
 | `python3 main.py --acoustid` | AcoustID fallback: fingerprint no_match songs, review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
+
+---
+
+## Metadata search strategy
+
+The `--metadata-search` pass (`pipeline/filename_pass.py`) is a text-based identification
+pass for files that Shazam and AcoustID both failed on. It is distinct from audio
+fingerprinting: instead of analysing the sound, it constructs a text query from whatever
+signals are available and searches music metadata APIs.
+
+### Signal priority
+
+Many badly-named files have perfectly good ID3 tags embedded — the filename was garbled
+by the ripper or download tool but the tags were set correctly at rip time. The pass
+therefore reads ID3 tags from the file before falling back to the filename:
+
+1. **`TIT2` (title) + `TPE1` (artist)** — most precise query; used if both are present
+2. **`TIT2` (title) alone** — used if artist tag is missing or empty
+3. **Cleaned filename** — last resort; strips track numbers, underscores, brackets,
+   year tokens, and anything in square brackets before searching
+
+### Query cascade
+
+Rather than sending one query and giving up, the pass tries progressively simpler
+queries until a result above a confidence threshold is found:
+
+```
+tags: title + artist  →  any result?  → show candidates
+          ↓ no
+tags: title alone     →  any result?  → show candidates
+          ↓ no
+cleaned filename      →  any result?  → show candidates
+          ↓ no
+→ mark as no_mb_match, move on
+```
+
+### Search sources
+
+| Service | Auth required | Strengths |
+|---|---|---|
+| **MusicBrainz** | None | Open database; strong for Western, classical, and well-catalogued Indian film music |
+| **iTunes Search API** | None | Apple Music catalog; excellent coverage of Tamil and Hindi film music; returns clean structured data |
+
+Both services are queried with no API key or account. MusicBrainz enforces a 1 req/sec
+rate limit (handled by a `time.sleep(1.1)` between calls). iTunes has no published rate
+limit but is used conservatively.
+
+The pass shows the user up to 3 candidates from the best-scoring source, labelled with
+which signal was used (tags vs filename) so the user can judge the result in context.
 
 ---
 

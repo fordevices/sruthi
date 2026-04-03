@@ -25,10 +25,10 @@ The pipeline sends a short audio fingerprint of each file to Shazam's database. 
 **3. Some files won't match. That's normal.**
 Recordings not in Shazam's database, older tracks, or live versions get saved as `no_match` and held for the next steps. Run `python3 main.py --stats` to see how many there are.
 
-**4. Try the filename pass — no sign-up needed.**
-The pipeline cleans up each unmatched filename and searches MusicBrainz, the world's largest open music database:
+**4. Try the metadata search pass — no sign-up needed.**
+The pipeline reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches MusicBrainz with the best signal available:
 ```bash
-python3 main.py --filename-match
+python3 main.py --metadata-search
 ```
 For each file you see up to 3 candidates and pick the right one. No account or API key required. This resolves a large chunk of what Shazam missed.
 

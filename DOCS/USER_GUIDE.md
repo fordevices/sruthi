@@ -23,7 +23,7 @@ without reprocessing files that are already done.
 | `python3 main.py Input/` | Full pipeline — identify, tag, and move everything | Resumes safely if interrupted |
 | `python3 main.py Input/ --stage 1` | Identify only (Shazam fingerprinting) | First step on a new batch |
 | `python3 main.py --review` | Review unmatched files interactively | After Stage 1 finds `no_match` files |
-| `python3 main.py --filename-match` | Search MusicBrainz by cleaned filename | Second pass for `no_match` files; no API key needed |
+| `python3 main.py --metadata-search` | Search MusicBrainz using ID3 tags + cleaned filename | Second pass for `no_match` files; no API key needed |
 | `python3 main.py --acoustid` | AcoustID audio fingerprint fallback | Requires `fpcalc` binary and AcoustID API key |
 | `python3 main.py --move` | Tag and move all identified files | Run after any identification pass |
 | `python3 main.py --stats` | Show DB summary (counts, languages, top albums) | No files touched |
@@ -366,16 +366,18 @@ python3 main.py --review --limit 20   ← review only the next 20 unmatched file
 
 ---
 
-## Filename search pass
+## Metadata search pass
 
-For files that Shazam failed on, a third pass searches MusicBrainz using the
-cleaned filename as a text query. No API key or binary dependency required.
+For files that Shazam failed on, a third pass searches MusicBrainz using the best
+text signals available — existing ID3 tags (title, artist) are read from the file
+first, with the cleaned filename used as a fallback when tags are absent.
+No API key or binary dependency required.
 
 ```
-python3 main.py --filename-match
+python3 main.py --metadata-search
 ```
 
-For each `no_match` file the pipeline cleans the filename and shows up to 3 candidates:
+For each `no_match` file the pipeline builds a search query and shows up to 3 candidates:
 
 ```
 ────────────────────────────────────────────
@@ -536,7 +538,7 @@ hyphens — are preserved exactly.
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs to `Music/` (stages 3+4, no source needed) |
 | `python3 main.py --move --dry-run` | Preview what `--move` would do without changing anything |
-| `python3 main.py --filename-match` | Filename search pass: query MusicBrainz with cleaned filenames, review interactively |
+| `python3 main.py --metadata-search` | Metadata search pass: query MusicBrainz using ID3 tags + cleaned filename, review interactively |
 | `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 
