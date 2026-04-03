@@ -1,6 +1,10 @@
 # MP3 files — excluded, but folder structure is preserved via .gitkeep
 *.mp3
 
+# Regression test fixtures are explicitly tracked
+!tests/fixtures/**/*.mp3
+!tests/fixtures/**/*.MP3
+
 # Runtime database — generated on first run
 music.db
 
