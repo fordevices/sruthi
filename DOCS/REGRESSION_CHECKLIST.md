@@ -3,13 +3,41 @@
 Run this before any release tag. It covers the critical paths and every bug that has been
 fixed at least once — the areas most likely to regress.
 
-**Prerequisites:** `python3 main.py --check` passes. Start with a clean DB:
+---
+
+## Setup — place test fixtures before running
+
+Test files are stored in `tests/fixtures/Tamil/` in the repo. Copy them into `Input/Tamil/`
+before starting:
+
+```bash
+cp tests/fixtures/Tamil/*.mp3 Input/Tamil/
+```
+
+### Fixture manifest
+
+| File | Expected Stage 1 outcome |
+|---|---|
+| `Anthaathi.mp3` | ✓ identified — Shazam matches |
+| `Malare_Oru_Varthai.mp3` | ✓ identified — Shazam matches |
+| `Mana_Madurai.mp3` | ✓ identified — Shazam matches |
+| `Mei_Nigara.mp3` | ✓ identified — Shazam matches |
+| `Minnal_Oru_Kodi.mp3` | ✓ identified — Shazam matches |
+| `Kathi_vaitha.mp3` | ✗ no_match — Shazam returns nothing |
+| `Kelakalee_aathu.mp3` | ✗ no_match — Shazam returns nothing |
+| `Marandhadhae222.mp3` | ✗ no_match — Shazam returns nothing |
+
+After a successful full-pipeline run, the 5 identified files will be moved out of `Input/Tamil/`
+into `Music/Tamil/`. The 3 no_match files stay in `Input/Tamil/`.
+
+---
+
+## Start with a clean DB
+
 ```bash
 python3 main.py --zeroise   # type YES
 python3 main.py --stats     # all counts = 0
 ```
-
-Have at least one well-known MP3 in `Input/<Language>/` that Shazam can identify.
 
 ---
 

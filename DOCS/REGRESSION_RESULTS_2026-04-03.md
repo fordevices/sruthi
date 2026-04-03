@@ -35,7 +35,7 @@
 
 ## Run details
 
-**Test files used:** 8 MP3s in `Input/Tamil/`
+**Test files used:** 8 MP3s from `tests/fixtures/Tamil/` copied to `Input/Tamil/`
 - 5 identified by Shazam: Anthaathi, Malare Oru Varthai, Mana Madurai, Mei Nigara, Minnal Oru Kodi
 - 3 no_match: Kathi_vaitha, Kelakalee_aathu, Marandhadhae222
 
