@@ -375,29 +375,54 @@ and `--limit`.
 
 ## Metadata search pass
 
-For files that Shazam failed on, a third pass searches MusicBrainz using the best
-text signals available — existing ID3 tags (title, artist) are read from the file
-first, with the cleaned filename used as a fallback when tags are absent.
-No API key or binary dependency required.
+For files that Shazam failed on, a third pass searches both MusicBrainz and iTunes
+using the best text signals available — existing ID3 tags (title, artist) are read
+from the file first, with the cleaned filename used as a fallback when tags are absent.
+No API key or binary dependency required for either service.
 
 ```
 python3 main.py --metadata-search
 ```
 
-For each `no_match` file the pipeline builds a search query and shows up to 3 candidates:
+For each `no_match` file the pipeline builds a search query and shows up to 6 candidates
+(up to 3 from MusicBrainz, up to 3 from iTunes), each labelled with its source:
 
 ```
 ────────────────────────────────────────────
 Song ID  : max-000021
 File     : Input/Hindi/01_o_saathi_re.mp3
 Language : Hindi
+Status   : no_match
 Search   : 'o saathi re'
-── MusicBrainz candidates ──
-  [1]  92%  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
-  [2]  74%  O Saathi Re — Lata Mangeshkar  |  Compilation  1985
-  [3]  61%  O Saathi Re (Remix) — Various  |  Remix Album
+── Candidates ──
+  [1]  92%  [MB    ]  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
+  [2]  74%  [MB    ]  O Saathi Re — Lata Mangeshkar  |  Compilation  1985
+  [3]       [iTunes]  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
 ────────────────────────────────────────────
 [1/2/3] Pick  [e] Edit manually  [p] Play  [s] Skip  [q] Quit
+
+### Running on already-identified files
+
+By default `--metadata-search` only processes `no_match` files. To run it across
+every file in the database — useful for correcting wrong years or album names on
+files that Shazam already identified — add `--all`:
+
+```
+python3 main.py --metadata-search --all
+```
+
+To limit to one language folder:
+
+```
+python3 main.py --metadata-search --all --folder Tamil
+```
+
+After making corrections, run `--move` to rewrite the ID3 tags and relocate any
+files whose metadata changed:
+
+```
+python3 main.py --move
+```
 ## AcoustID fallback pass
 
 For songs that Shazam could not identify and that have no collection pattern in their
@@ -541,12 +566,14 @@ hyphens — are preserved exactly.
 | `python3 main.py --review --flagged` | Review only suspicious-year files |
 | `python3 main.py --review --all` | Review every file including matched ones |
 | `python3 main.py --review --limit N` | Review only next N unmatched files |
-| `python3 main.py --review --folder=PATH` | Review only songs whose path starts with PATH (issue #15 — coming soon) |
+| `python3 main.py --review --folder PATH` | Review only songs whose path contains PATH |
 | `python3 main.py --stats` | Print DB summary — no files touched |
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs to `Music/` (stages 3+4, no source needed) |
 | `python3 main.py --move --dry-run` | Preview what `--move` would do without changing anything |
-| `python3 main.py --metadata-search` | Metadata search pass: query MusicBrainz using ID3 tags + cleaned filename, review interactively |
+| `python3 main.py --metadata-search` | Search MusicBrainz + iTunes for `no_match` files using ID3 tags or filename |
+| `python3 main.py --metadata-search --all` | Same but runs on every song regardless of status |
+| `python3 main.py --metadata-search --folder PATH` | Limit metadata search to songs whose path contains PATH |
 | `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 

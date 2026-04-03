@@ -26,11 +26,11 @@ The pipeline sends a short audio fingerprint of each file to Shazam's database. 
 Recordings not in Shazam's database, older tracks, or live versions get saved as `no_match` and held for the next steps. Run `python3 main.py --stats` to see how many there are.
 
 **4. Try the metadata search pass — no sign-up needed.**
-The pipeline reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches MusicBrainz with the best signal available:
+The pipeline reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches both MusicBrainz and iTunes with the best signal available:
 ```bash
 python3 main.py --metadata-search
 ```
-For each file you see up to 3 candidates and pick the right one. No account or API key required. This resolves a large chunk of what Shazam missed.
+For each file you see up to 6 candidates (3 from MusicBrainz, 3 from iTunes) and pick the right one. No account or API key required. This resolves a large chunk of what Shazam missed.
 
 **5. Optionally, try the AcoustID pass — deeper fingerprinting, free API key.**
 AcoustID uses a different audio fingerprint algorithm that catches many songs Shazam misses. It requires a free API key from [acoustid.org](https://acoustid.org) (under 2 minutes to register) and the `fpcalc` binary:
@@ -52,6 +52,19 @@ After any of the steps above identify new files, run:
 python3 main.py --move
 ```
 This writes the ID3 tags and moves all newly identified files into `Music/` — the same organised folder structure as the original run.
+
+**8. Optional — go back and correct already-identified files.**
+Once the main run is done you may spot files that were identified correctly by Shazam but have a wrong year, different album version, or a better match available. Run the metadata search against everything — not just `no_match` files — and correct as you go:
+```bash
+python3 main.py --metadata-search --all
+# optionally limit to one language folder:
+python3 main.py --metadata-search --all --folder Tamil
+```
+After making corrections, run `--move` again to rewrite the tags and relocate any files whose metadata changed:
+```bash
+python3 main.py --move
+```
+Both steps are entirely optional — they're for tidying up after the main work is done.
 
 When you're done, every file you dropped into `Input/` has either been organised into `Music/` with full tags, or is still sitting in `Input/` clearly marked in the database as needing attention.
 
