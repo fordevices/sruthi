@@ -1,15 +1,20 @@
 # 🎵 Sruthi
 
-> Transform a folder of mystery MP3s into a perfectly organised, fully tagged
-> collection — sorted by language, year, and album. Works on macOS, Linux, and Windows.
-> The Sruthi MP3 Pipeline needs no API keys. Optional features (transliteration, GUI) use
-> Sarvam AI and Claude API.
+> Open-source MP3 library tool that identifies songs by audio fingerprint, repairs and
+> enriches ID3 metadata from ShazamIO, MusicBrainz, and iTunes, then organises files
+> into a clean `Language/Year/Album/` folder tree. Built for large multilingual collections
+> — Tamil, Hindi, English, and beyond. Core pipeline runs with no API keys.
+> Optional features (transliteration, NL query GUI) use Sarvam AI and Claude API.
+
+Works on macOS, Linux, and Windows.
 
 ---
 
 ## From a pile of files to a clean library
 
-Say you have hundreds of MP3s scattered across a hard drive — Tamil classics, old Bollywood tracks, some English songs — most with filenames like `track01.mp3` or `sattam_naanbaneyennathuuyir.mp3`. Here is what you do.
+If you have a large MP3 collection — Tamil classics, old Bollywood tracks, English songs — where the filenames are garbled (`track01.mp3`, `sattam_naanbaneyennathuuyir.mp3`), the ID3 tags are wrong or empty, and standard tools like beets or MusicBrainz Picard give poor results on Indian music, Sruthi is built for that problem.
+
+It identifies songs by audio fingerprint via ShazamIO, fills in title, artist, album, and year, then moves each file to the right place. For anything Shazam misses, it searches MusicBrainz and iTunes using existing tags or the cleaned filename. What cannot be identified automatically goes to a manual review queue. Here is how it works.
 
 **1. Sort by language, drop them in.**
 Create language folders inside `Input/` and copy your files there. Filenames don't matter at all — that's the whole point.
