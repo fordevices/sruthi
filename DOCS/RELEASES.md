@@ -1,43 +1,90 @@
-# Sruthi — Release History
+# Sruthi — Release Notes
 
-All work is tracked as GitHub issues:
-https://github.com/fordevices/sruthi/issues
-
-Bugs → label `bug` | Features → label `enhancement`
+Issues and feature requests: https://github.com/fordevices/sruthi/issues
+Label bugs `bug`, feature requests `enhancement`.
 
 ---
 
 ## v1.2.0 *(in development)*
 
-- `--transliterate` pass — converts `Artist` ID3 tag to native script (Tamil/Devanagari) using Sarvam AI; each unique artist name cached in `music.db` after the first call
-- Read-only GUI (`gui.py`) — natural language → SQL over `music.db` via Claude API; opens in browser at `http://localhost:8501`
+### New features
 
-Issues: #26 (transliteration), #27 (GUI)
-Open: #25 (song-level language detection — future release)
+**Transliteration pass** (`--transliterate`)
+Converts the `Artist` ID3 tag for Tamil and Hindi songs from Roman script to native script
+using Sarvam AI. Artist names are transliterated once per unique name per language and
+cached in a new `artist_transliterations` table in `music.db` — a name appearing in 200
+songs costs one API call. Requires a free Sarvam API key.
+
+Example: `Ilaiyaraaja` → `இளையராஜா` (Tamil), `Lata Mangeshkar` → `लता मंगेशकर` (Hindi)
+
+**Read-only query GUI** (`streamlit run gui.py`)
+A lightweight local web UI that lets you query `music.db` in plain English. Type a question,
+get a table. Includes built-in reports for common queries (flagged songs, no-match by
+language, unknown year/album queues, transliteration cache). Read-only — never writes to
+the database or touches files. Requires a Claude API key and `pip install streamlit anthropic`.
+
+### Open issues
+- #25 — song-level language detection (planned for a future release; current detection is
+  folder-based, which misclassifies ~5–10% of songs in mixed-language collections)
+
+### Issues closed
+\#26 (transliteration pass), #27 (read-only GUI)
 
 ---
 
-## v1.1.0 — released April 3, 2026
+## v1.1.0 — April 3, 2026
 
-- iTunes metadata search added to `--metadata-search` pass
-- ID3 tag query: reads existing tags before falling back to cleaned filename
-- `--all` flag: run `--metadata-search` across all songs, not just `no_match`
-- `--folder` flag: scope any pass to a specific subfolder
+### New features
 
-Tested on 5,550 files: **68% automated match rate** (3,768 identified, 1,700 no_match, 4 errors).
+**iTunes added to metadata search**
+The `--metadata-search` pass now queries both MusicBrainz and iTunes (previously
+MusicBrainz only), showing up to 6 candidates per file. iTunes has strong coverage of
+commercial Bollywood and Tamil film music, filling gaps where MusicBrainz is sparse.
 
-Issues fixed: #7, #11, #13, #15, #16, #17, #18, #19, #22
+**ID3 tag priority in metadata search**
+Search queries now read existing ID3 tags (title, artist) from the file first, falling
+back to the cleaned filename only when tags are absent. This significantly improves
+candidate quality for files that were partially tagged.
+
+**`--all` flag**
+Pass `--metadata-search --all` to run the metadata search across every song in the
+database, not just `no_match` files. Useful for correcting wrong years or album names
+on files that Shazam already identified.
+
+**`--folder` flag**
+Scope any identification or review pass to a specific subfolder path. Useful for
+working through one language or album at a time on large collections.
+
+### Batch run results
+Tested on 5,550 files: **68% automated match rate** — 3,768 identified and moved,
+1,700 no_match held for review, 4 errors. Run time: 5h 59m.
+See [RUN_STATISTICS.md](RUN_STATISTICS.md) for the full breakdown.
+
+### Issues closed
+\#7, #11, #13, #15, #16, #17, #18, #19, #22
 
 ---
 
-## v1.0.0 — released March 2026
+## v1.0.0 — March 2026
 
 Initial release.
 
-- ShazamIO fingerprint identification (Stage 1)
-- Manual review CLI (Stage 2)
-- Mutagen ID3 tag writer (Stage 3)
-- File rename + move to `Music/<Language>/<Year>/<Album>/` (Stage 4)
-- Resume-safe SQLite tracking (`music.db`)
-- AcoustID fallback pass (`--acoustid`)
-- `--dry-run`, `--stats`, `--check`, `--zeroise` utilities
+### Features
+
+**Four-stage pipeline**
+- Stage 1 — ShazamIO audio fingerprint: identifies title, artist, album, year with no API key
+- Stage 2 — Manual review CLI: plays each unmatched file, accepts typed metadata in `Title | Artist | Album | Year` format
+- Stage 3 — Mutagen ID3 tag writer: writes all metadata into the file
+- Stage 4 — File organiser: renames and moves to `Music/<Language>/<Year>/<Album>/`
+
+**Resume-safe SQLite tracking**
+Every file is recorded by MD5 hash in `music.db`. Re-running the same command skips
+files already at `status=done`. Safe to interrupt and restart on collections of any size.
+
+**AcoustID fallback pass** (`--acoustid`)
+Secondary audio fingerprinting pass using the open AcoustID + MusicBrainz database.
+Catches songs that Shazam cannot identify. Requires `fpcalc` (Chromaprint) and a free
+AcoustID API key.
+
+**Utilities**
+`--dry-run`, `--stats`, `--check`, `--zeroise`, `--review --flagged`, `--move`

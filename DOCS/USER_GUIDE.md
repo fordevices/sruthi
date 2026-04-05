@@ -4,15 +4,16 @@
 > **Want to understand how it works?** See [Architecture](ARCHITECTURE.md).
 > **Questions about MP3s and fingerprinting?** See [Music Files Primer](MUSIC_FILES_PRIMER.md).
 
-Sruthi is a command-line tool that takes a folder of unknown, badly-named
-MP3 files and transforms them into a clean, fully tagged, and neatly organised music library.
-It is designed for anyone with a large collection of Tamil, Hindi, English, or other-language
-MP3s whose filenames are garbled, missing, or meaningless. The tool uses ShazamIO to
-fingerprint each audio file against Shazam's database (no API key required), writes standard
-ID3 tags into each matched file using Mutagen, then moves it into a structured folder tree
-(`Music/<Language>/<Year>/<Album>/`). Every file processed is recorded in a local SQLite
-database, making the pipeline fully resume-safe — you can stop at any point and re-run
-without reprocessing files that are already done.
+Sruthi is an open-source command-line tool for identifying, tagging, and organising large
+MP3 collections. It is designed for collections where filenames are garbled or meaningless,
+ID3 tags are wrong or empty, and standard tools (beets, MusicBrainz Picard) give poor
+coverage — particularly for Tamil, Hindi, and other South Asian music.
+
+Sruthi identifies songs by audio fingerprint via ShazamIO (no API key required), enriches
+metadata from MusicBrainz and iTunes as fallbacks, writes correct ID3 tags using Mutagen,
+then moves each file into a structured folder tree (`Music/<Language>/<Year>/<Album>/`).
+Every file is tracked in a local SQLite database, making the process fully resume-safe —
+stop at any point and re-run without reprocessing files already done.
 
 ---
 
@@ -720,16 +721,14 @@ For flagged songs, a suggested CLI command is shown to help you correct the issu
 
 ### Who this is for
 
-This tool is for users comfortable with a terminal. If you want your music organised
-without any of this complexity, just use iTunes — it handles the common case perfectly.
-This pipeline exists for large Tamil/Hindi collections from the pre-streaming era where
-the common tools fail.
+Sruthi is for anyone managing a large MP3 collection — particularly Tamil, Hindi, and other
+South Asian music from the pre-streaming era — where standard tools give poor metadata
+coverage. It is a command-line tool; basic terminal comfort is assumed. The GUI is an
+optional read-only layer on top; it does not replace the CLI.
 
 ---
 
 ## Bugs and new features
-
-This tool is at v1.0.0. The pipeline is complete and working.
 
 **Found a bug?** Open an issue at:
 ```
