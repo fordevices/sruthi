@@ -217,7 +217,11 @@ with st.sidebar:
     st.markdown("---")
 
     st.markdown("**Standard reports**")
-    report_choice = st.selectbox("report", list(CANNED.keys()), label_visibility="collapsed")
+    report_choice = st.selectbox("report", list(CANNED.keys()), label_visibility="collapsed", key="report_select")
+    if report_choice and CANNED.get(report_choice):
+        if st.button("✕ Clear report", use_container_width=True):
+            st.session_state.report_select = 0
+            st.rerun()
 
     st.markdown("---")
     st.markdown("[GitHub project](https://github.com/fordevices/mp3-organizer-pipeline)")
