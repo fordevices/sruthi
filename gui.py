@@ -217,10 +217,14 @@ with st.sidebar:
     st.markdown("---")
 
     st.markdown("**Standard reports**")
-    report_choice = st.selectbox("report", list(CANNED.keys()), label_visibility="collapsed", key="report_select")
+    _keys = list(CANNED.keys())
+    if "report_idx" not in st.session_state:
+        st.session_state.report_idx = 0
+    report_choice = st.selectbox("report", _keys, index=st.session_state.report_idx, label_visibility="collapsed")
+    st.session_state.report_idx = _keys.index(report_choice)
     if report_choice and CANNED.get(report_choice):
         if st.button("✕ Clear report", use_container_width=True):
-            st.session_state.report_select = 0
+            st.session_state.report_idx = 0
             st.rerun()
 
     st.markdown("---")
