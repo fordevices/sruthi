@@ -18,7 +18,7 @@ from pipeline import config
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="mp3 library",
+    page_title="Sruthi",
     page_icon="🎵",
     layout="wide",
 )
@@ -209,46 +209,12 @@ def show_results(rows: list[dict], sql: str):
 # UI
 # ---------------------------------------------------------------------------
 
-st.title("🎵 mp3 library")
-
-with st.expander("ℹ️  Who this is for", expanded=False):
-    st.markdown("""
-**Not for everyone — and that's intentional.**
-
-If you want your music organised without any of this, just use iTunes. It does the job
-beautifully for most people and you will never need this tool.
-
-This pipeline exists for a specific problem: large collections of Tamil and Hindi MP3s
-from the pre-streaming era with garbled filenames, wrong tags, and no consistent structure.
-
-The query tool below works like a report menu. Standard reports are always available.
-If none of them fit, describe what you want in plain English — *"show me all Tamil songs
-where the album is unknown"* — and it generates the report on the fly.
-
-**You do not need to know SQL.** In the AI age, you describe the report you need and it
-gets built for you instantly. That is the only shift from the old Crystal Reports / Power BI
-way of working.
-
-This tool is **read-only** — it never writes to the database or touches your files.
-To fix issues, use the CLI commands shown in the fix hints below each flagged result.
-""")
+st.title("🎵 Sruthi")
+st.caption("Your music library, searchable in plain English.")
 
 st.markdown("---")
 
-# -- Canned reports ----------------------------------------------------------
-st.subheader("Standard reports")
-report_choice = st.selectbox("Choose a report", list(CANNED.keys()))
-if report_choice and CANNED[report_choice]:
-    sql = CANNED[report_choice]
-    rows, err = run_sql(sql)
-    if err:
-        st.error(f"Query error: {err}")
-    else:
-        show_results(rows, sql)
-
-st.markdown("---")
-
-# -- NL query ----------------------------------------------------------------
+# -- NL query (top) ----------------------------------------------------------
 st.subheader("Ask a question")
 st.caption("Examples: *show me all Tamil songs from 1981* · *find everything by Ilaiyaraaja* · *how many Hindi songs do I have*")
 
@@ -265,3 +231,47 @@ if st.button("Search", type="primary") and question.strip():
             st.code(sql, language="sql")
         else:
             show_results(rows, sql)
+
+st.markdown("---")
+
+# -- Canned reports (main area results) --------------------------------------
+main_area = st.container()
+
+# -- Sidebar -----------------------------------------------------------------
+with st.sidebar:
+    st.header("📋 Standard reports")
+    report_choice = st.selectbox("Choose a report", list(CANNED.keys()), label_visibility="collapsed")
+
+if report_choice and CANNED[report_choice]:
+    sql = CANNED[report_choice]
+    rows, err = run_sql(sql)
+    with main_area:
+        st.subheader(report_choice)
+        if err:
+            st.error(f"Query error: {err}")
+        else:
+            show_results(rows, sql)
+
+# -- About (bottom) ----------------------------------------------------------
+st.markdown("---")
+with st.expander("ℹ️  Who this is for", expanded=False):
+    st.markdown("""
+**Not for everyone — and that's intentional.**
+
+If you want your music organised without any of this, just use iTunes. It does the job
+beautifully for most people and you will never need this tool.
+
+This pipeline exists for a specific problem: large collections of Tamil and Hindi MP3s
+from the pre-streaming era with garbled filenames, wrong tags, and no consistent structure.
+
+The query tool above works like a report menu. Standard reports are always available in
+the sidebar. If none of them fit, describe what you want in plain English — *"show me all
+Tamil songs where the album is unknown"* — and it generates the report on the fly.
+
+**You do not need to know SQL.** In the AI age, you describe the report you need and it
+gets built for you instantly. That is the only shift from the old Crystal Reports / Power BI
+way of working.
+
+This tool is **read-only** — it never writes to the database or touches your files.
+To fix issues, use the CLI commands shown in the fix hints below each flagged result.
+""")
