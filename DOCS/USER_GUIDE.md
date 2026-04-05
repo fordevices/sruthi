@@ -31,6 +31,8 @@ without reprocessing files that are already done.
 | `python3 main.py --review --folder=PATH` | Review only songs in a specific folder | Issue #15 — coming soon |
 | `python3 main.py Input/ --dry-run` | Preview everything — nothing written or moved | Safe to run on a new batch first |
 | `python3 main.py --zeroise` | Wipe the database and start fresh | Requires typing `YES` to confirm |
+| `python3 main.py --transliterate` | Transliterate artist ID3 tags to native script | Requires `SARVAM_API_KEY` — v1.2.0 |
+| `python3 gui.py` | Launch read-only NL query GUI in browser | Requires `ANTHROPIC_API_KEY` + streamlit — v1.2.0 |
 
 For all flags and combinations see [Full CLI reference](#full-cli-reference) below.
 
@@ -50,7 +52,14 @@ For all flags and combinations see [Full CLI reference](#full-cli-reference) bel
 | Internet | required | ShazamIO sends audio fingerprints to Shazam's servers |
 | Disk space | ~50 MB | For `music.db` + run logs; `Music/` output size varies |
 
-No API keys. No accounts. No system binaries beyond Python itself.
+**Core pipeline:** no API keys, no accounts, no system binaries beyond Python itself.
+
+**Optional features:**
+
+| Feature | Requires |
+|---|---|
+| `--transliterate` (artist name transliteration) | Free Sarvam AI API key — register at [sarvam.ai](https://sarvam.ai); set `SARVAM_API_KEY`. Docs: https://docs.sarvam.ai/api-reference-docs/text/transliterate-text |
+| `python3 gui.py` (NL query GUI) | Claude API key — set `ANTHROPIC_API_KEY`. Plus `pip install streamlit anthropic` |
 
 ---
 
@@ -597,6 +606,103 @@ Based on testing with a real collection:
 1. Audio fingerprint not present in Shazam's database
 2. File shorter than 8 seconds
 3. Very obscure or locally-released recordings never submitted to Shazam
+
+---
+
+## Transliteration pass *(v1.2.0)*
+
+The `--transliterate` pass converts the `Artist` ID3 tag for Tamil and Hindi songs from
+Roman script to native script using Sarvam AI.
+
+**Example:** `Ilaiyaraaja` → `இளையராஜா` (Tamil), `Lata Mangeshkar` → `लता मंगेशकर` (Hindi)
+
+### Prerequisites
+
+1. **Register** for a free account at [sarvam.ai](https://sarvam.ai) to get an API key.
+   Docs: https://docs.sarvam.ai/api-reference-docs/text/transliterate-text
+
+2. **Set the environment variable:**
+   ```
+   export SARVAM_API_KEY=your_key_here
+   ```
+
+### Running the pass
+
+```
+python3 main.py --transliterate
+```
+
+Each unique artist name per language is sent to Sarvam once and cached in the
+`artist_transliterations` table in `music.db`. Subsequent runs and re-runs use the
+cache — no repeat API calls.
+
+**Notes:**
+- Only `Artist` tag is affected — filenames and folder names are unchanged
+- English songs are skipped entirely
+- Compound artist strings (e.g. `A.R. Rahman & Lata Mangeshkar`) are split, each name
+  transliterated independently, then reassembled
+- The target script follows the song's language: Tamil songs → Tamil script, Hindi → Devanagari
+- ~5–10% of songs may be mis-classified due to folder-based language detection; this is
+  accepted noise and can be reviewed via the GUI
+
+---
+
+## GUI — natural language query tool *(v1.2.0)*
+
+A lightweight local web UI that lets you query `music.db` in plain English.
+Results are shown as a table with file paths. **Read-only — nothing is written or moved.**
+
+### Prerequisites
+
+1. **Claude API key** from [console.anthropic.com](https://console.anthropic.com):
+   ```
+   export ANTHROPIC_API_KEY=your_key_here
+   ```
+
+2. **Install extra dependencies:**
+   ```
+   pip install streamlit anthropic
+   ```
+
+### Running the GUI
+
+```
+python3 gui.py
+```
+
+Open `http://localhost:8501` in your browser.
+
+### Canned reports
+
+Always available from the report menu — no typing needed:
+
+- Songs flagged for review
+- No-match songs by language
+- Unknown Year queue
+- Unknown Album queue
+- Language breakdown summary
+- Transliteration cache viewer
+
+### Natural language queries
+
+Type any question in plain English. Examples:
+
+```
+show me all Tamil songs from 1981
+find everything by Ilaiyaraaja
+show songs where the album is unknown
+how many Hindi songs do I have
+```
+
+Results include the file path so you can navigate directly to the file.
+For flagged songs, a suggested CLI command is shown to help you correct the issue.
+
+### Who this is for
+
+This tool is for users comfortable with a terminal. If you want your music organised
+without any of this complexity, just use iTunes — it handles the common case perfectly.
+This pipeline exists for large Tamil/Hindi collections from the pre-streaming era where
+the common tools fail.
 
 ---
 

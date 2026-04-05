@@ -1,8 +1,9 @@
 # 🎵 mp3-organizer-pipeline
 
 > Transform a folder of mystery MP3s into a perfectly organised, fully tagged
-> collection — sorted by language, year, and album. No API keys. No accounts.
-> Works on macOS, Linux, and Windows.
+> collection — sorted by language, year, and album. Works on macOS, Linux, and Windows.
+> Core pipeline needs no API keys. Optional features (transliteration, GUI) use
+> Sarvam AI and Claude API.
 
 ---
 
@@ -65,6 +66,28 @@ After making corrections, run `--move` again to rewrite the tags and relocate an
 python3 main.py --move
 ```
 Both steps are entirely optional — they're for tidying up after the main work is done.
+
+**9. Optional — transliterate artist names to native script.** *(v1.2.0 — coming soon)*
+Tamil and Hindi artist names returned by Shazam are always in Roman script (e.g.
+`Ilaiyaraaja`, `Lata Mangeshkar`). This pass converts the `Artist` ID3 tag to native
+script (Tamil or Devanagari) using Sarvam AI. Requires a free Sarvam API key from
+[sarvam.ai](https://sarvam.ai). Each unique artist name is translated once and cached —
+a name appearing in 200 songs costs one API call.
+```bash
+export SARVAM_API_KEY=your_key_here
+python3 main.py --transliterate
+```
+
+**10. Optional — query your library in plain English.** *(v1.2.0 — coming soon)*
+A lightweight local web UI lets you ask questions like "show me all Tamil songs from 1981"
+or "find everything flagged for review" and see results as a table with file paths. Read-only —
+nothing is written or moved from the GUI. Requires a Claude API key.
+```bash
+export ANTHROPIC_API_KEY=your_key_here
+python3 gui.py
+```
+Open `http://localhost:8501` in your browser. Use the canned report menu or type any query
+in plain English. No SQL knowledge needed.
 
 When you're done, every file you dropped into `Input/` has either been organised into `Music/` with full tags, or is still sitting in `Input/` clearly marked in the database as needing attention.
 
@@ -152,9 +175,12 @@ Tested on 26 files including 1970s–2000s Ilaiyaraaja and classic Hindi film mu
 
 ## Status
 
-**v1.0.0 — released March 21, 2026**
+**v1.1.0 — released April 3, 2026** — iTunes metadata search, ID3 tag query, `--all`, `--folder` flags.
+Tested on 5,550 files: 68% automated match rate (3,768 identified, 1,700 no_match, 4 errors).
 
-All future work is tracked as GitHub issues:
+**v1.2.0 — in development** — Transliteration pass (#26) + read-only GUI (#27).
+
+All work is tracked as GitHub issues:
 https://github.com/fordevices/mp3-organizer-pipeline/issues
 
 Bugs → label `bug` | Features → label `enhancement`

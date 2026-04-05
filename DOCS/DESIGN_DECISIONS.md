@@ -132,6 +132,181 @@ can judge the result in context.
 
 ---
 
+---
+
+## Late design discussion — ID3 artist name transliteration (2026-04-04)
+
+### Context
+
+This discussion happened after v1.1.0 was released and a 5,550-file batch run was already
+in progress. It should have been had before Stage 4 (tagging) was designed.
+
+The collection originates from the early iPod era, when organising Indian music by folder
+structure (Tamil/, Hindi/) was the primary way to browse. At that time, having artist names
+in native script (Tamil, Devanagari) in the ID3 tags would have been meaningful — it is now
+a quality-of-life improvement for any player or library that renders tag metadata.
+
+### The problem with the original design
+
+The original design left artist names in their Romanised form as returned by Shazam (e.g.
+`A.R. Rahman`, `Lata Mangeshkar`, `Ilaiyaraaja`). Shazam always returns metadata in
+Roman script regardless of the song's language. No transliteration pass was planned.
+
+### What was evaluated
+
+Sarvam AI — an LLM specialising in Indian languages — was tested on 2026-04-04.
+
+**API:** `POST https://api.sarvam.ai/transliterate`
+**Docs:** https://docs.sarvam.ai/api-reference-docs/text/transliterate-text
+**Auth:** `api-subscription-key` header — requires a free account at sarvam.ai
+**Pricing:** Free tier provides INR 1,000 credit. No binary dependency.
+
+Three test calls:
+
+| Input (Roman) | Target | Output (native script) |
+|---|---|---|
+| `A.R. Rahman` | Tamil (ta-IN) | `ஏ.ஆர். ரஹ்மான்` |
+| `Lata Mangeshkar` | Hindi (hi-IN) | `लता मंगेशकर` |
+| `Ilaiyaraaja` | Tamil (ta-IN) | `இளையராஜா` |
+
+All three results were accurate.
+
+### Decision — if implemented
+
+**The target script must follow the song's language, not the artist's origin language.**
+
+Rationale: the same artist (e.g. A.R. Rahman) composes for both Tamil and Hindi films.
+Writing his name in Tamil script on a Tamil song and in Devanagari on a Hindi song is
+correct — the script should match the linguistic context of the track, not a canonical
+"home language" for the artist.
+
+Concretely:
+- Song `language = 'Tamil'` → artist name transliterated to `ta-IN`
+- Song `language = 'Hindi'` → artist name transliterated to `hi-IN`
+- Song `language = 'English'` → no transliteration, keep Roman
+
+Compound artist strings (e.g. `"A.R. Rahman & Lata Mangeshkar"`) must be split on `&`
+and `,`, each component transliterated independently, then reassembled.
+
+Only the `final_artist` ID3 field is in scope — filenames and folder names are unchanged.
+
+### Caching — `artist_transliterations` table
+
+To minimise API calls (and protect the free-tier credit), all transliteration results are
+stored in a dedicated DB table keyed on `(roman_name, language)`. Subsequent runs do a
+table lookup first and only call Sarvam for names not already cached. A name that appears
+in 200 songs (e.g. Ilaiyaraaja) costs exactly one API call.
+
+### What was not resolved
+
+The `language` field in the DB is derived from the input folder structure, which has known
+inaccuracies (English-language artists filed under Tamil/Hindi folders and vice versa).
+A reliable language classifier for the song itself — independent of folder structure —
+would be needed before a bulk transliteration run to avoid mis-scripting artist names.
+Accepted as ~5–10% tolerable noise for v1.2.0. Tracked as a future improvement in
+GitHub issue #25.
+
+---
+
+---
+
+## Late design discussion — GUI query tool scope (2026-04-04)
+
+### What it is
+
+A read-only natural language query interface over `music.db`. The user types plain English
+("show me all Tamil songs from 1981", "find everything flagged for review") and a Claude
+API call converts it to SQL, runs it, and returns results as a table.
+
+That is the full scope. It does not write to the DB. It does not write to the filesystem.
+It does not re-tag files. It does not move files.
+
+### NL → SQL implementation — why Claude API + direct SQLite
+
+Several options were evaluated before choosing the implementation approach:
+
+| Option | Verdict | Reason |
+|---|---|---|
+| **Claude API + direct SQLite** ✅ | Chosen | 50 lines of Python, no training, excellent SQL quality for a 15-column schema, handles ambiguous language well |
+| LlamaIndex NLSQLTableQueryEngine | Overkill | Adds abstraction overhead; API breaks between minor versions; no advantage for a single table |
+| LangChain SQLDatabaseChain | Avoid | Actively deprecated and reshuffled into `langchain-community`; fragmented docs |
+| Vanna.ai | Over-engineered | Requires a vector store + 20–30 training Q&A pairs; justified for complex schemas, not this one |
+| SQLCoder (Defog, local model) | Niche | Needs GPU for usable speed; best open-source SQL model but overkill for simple queries |
+| Ollama + raw prompting | Valid fallback | 80–90% of Claude quality for simple queries; use if offline operation is needed |
+
+**Key implementation details:**
+- Claude model: `claude-sonnet-4-6`, temperature **0.2** (deterministic SQL, not creative output)
+- Schema + status values + language values embedded in the system prompt
+- Hard `SELECT`-only guard: any non-`SELECT` query is rejected before execution
+- 5–10 example Q&A pairs in the system prompt improve consistency for domain terms
+- **Requires a Claude API key** — set via `ANTHROPIC_API_KEY` environment variable
+
+### What it is not — and why
+
+An earlier draft of this feature included inline editing, field correction, re-tagging,
+and file moves triggered from the GUI. That scope was explicitly rejected.
+
+**Rationale:**
+
+The intended user of this tool is not computer-illiterate. This is a power-user pipeline
+for someone who is comfortable with a terminal. A person who cannot operate a command line
+has no MP3 collection with this level of disorganisation in the first place — they signed
+up for iTunes or Spotify and never had the problem.
+
+Building write-back into the GUI would add significant complexity (DB write + Mutagen
+re-tag + filesystem move must all succeed atomically) for no real benefit: the same user
+can navigate to the right folder and run a CLI command in seconds.
+
+### How data quality issues are surfaced
+
+The GUI displays flagged records (`error_msg LIKE 'REVIEW:%'`) as a dedicated queue.
+For each flagged song it shows the `final_path` and a help line with the exact CLI
+command the user needs to run to correct it — e.g.:
+
+```
+File:    Music/English/1900/Country Tunes, Vol. 4/A Fool Such as I.mp3
+Issue:   REVIEW: bogus year 1900 — Jim Reeves was active 1950s–60s
+Fix via: python main.py --review --folder "Music/English/1900"
+```
+
+The user reads the hint, opens a terminal, runs the command. The GUI is an inspector
+and navigator, not an editor.
+
+### Transliteration
+
+Transliteration of ID3 artist tags (Sarvam AI) runs as a batch pipeline pass, not from
+the GUI. De-duplicating by unique artist name before calling the API (e.g. Ilaiyaraaja
+appears 200 times but is only one API call) is handled in the batch pass. The GUI has
+no role in transliteration.
+
+### UX philosophy — what to tell users
+
+The GUI should be upfront about who it is and is not for. Somewhere visible — the landing
+page or a prominent About section — it should say something like:
+
+> **Not for everyone — and that's intentional.**
+>
+> If you want your music organised without any of this, just use iTunes. It does the job
+> beautifully for most people and you will never need this tool.
+>
+> This pipeline exists for a specific problem: large collections of Tamil and Hindi MP3s
+> from the pre-streaming era, ripped from CDs, with garbled filenames, wrong tags, and
+> no consistent structure. If that is not your problem, stop here.
+>
+> If it is your problem, the query tool below works like a report menu. A set of standard
+> reports is always available. If none of them fit, just describe what you want in plain
+> English — "show me all Tamil songs where the album is unknown" — and it will generate
+> the report on the fly. You do not need to know SQL. You do not need Crystal Reports or
+> Power BI. In the AI age, you describe the report you need and it gets built for you,
+> for your exact use case, instantly. That is the only shift required from the old way of
+> working with canned reports.
+
+This sets expectations correctly, keeps the tool from being misused, and explains the
+NL → SQL capability in terms that anyone who has used Crystal Reports or similar tools
+will immediately understand.
+
+---
+
 ## Links
 
 [README.md](../README.md) | [Architecture](ARCHITECTURE.md) | [Database Reference](DATABASE.md)
