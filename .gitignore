@@ -21,3 +21,10 @@ Music/
 
 # Run logs (auto-created at runtime)
 runs/
+
+# Windows / iTunes folder metadata (never commit these)
+Thumbs.db
+desktop.ini
+AlbumArt*.jpg
+AlbumArtSmall.jpg
+Folder.jpg
