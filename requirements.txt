@@ -2,3 +2,6 @@ shazamio
 mutagen
 requests
 pyacoustid
+# Optional — required for GUI only (python3 gui.py)
+streamlit
+anthropic
