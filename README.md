@@ -2,7 +2,7 @@
 
 > Transform a folder of mystery MP3s into a perfectly organised, fully tagged
 > collection — sorted by language, year, and album. Works on macOS, Linux, and Windows.
-> Core pipeline needs no API keys. Optional features (transliteration, GUI) use
+> The Sruthi MP3 Pipeline needs no API keys. Optional features (transliteration, GUI) use
 > Sarvam AI and Claude API.
 
 ---
@@ -21,13 +21,13 @@ Input/Tamil/    Input/Hindi/    Input/English/    Input/Other/
 ```bash
 python3 main.py Input/
 ```
-The pipeline sends a short audio fingerprint of each file to Shazam's database. No API key needed. For mainstream Tamil, Hindi, and English music expect 80–90% of files to be matched instantly — title, artist, album, year all filled in. Each matched file gets its ID3 tags written and is moved to `Music/<Language>/<Year>/<Album>/` in one pass.
+The Sruthi MP3 Pipeline sends a short audio fingerprint of each file to Shazam's database. No API key needed. For mainstream Tamil, Hindi, and English music expect 80–90% of files to be matched instantly — title, artist, album, year all filled in. Each matched file gets its ID3 tags written and is moved to `Music/<Language>/<Year>/<Album>/` in one pass.
 
 **3. Some files won't match. That's normal.**
 Recordings not in Shazam's database, older tracks, or live versions get saved as `no_match` and held for the next steps. Run `python3 main.py --stats` to see how many there are.
 
 **4. Try the metadata search pass — no sign-up needed.**
-The pipeline reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches both MusicBrainz and iTunes with the best signal available:
+The Sruthi MP3 Pipeline reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches both MusicBrainz and iTunes with the best signal available:
 ```bash
 python3 main.py --metadata-search
 ```
@@ -84,9 +84,9 @@ or "find everything flagged for review" and see results as a table with file pat
 nothing is written or moved from the GUI. Requires a Claude API key.
 ```bash
 export ANTHROPIC_API_KEY=your_key_here
-python3 gui.py
+streamlit run gui.py
 ```
-Open `http://localhost:8501` in your browser. Use the canned report menu or type any query
+Streamlit will print a local URL — open it in your browser (default `http://localhost:8501`). Use the canned report menu or type any query
 in plain English. No SQL knowledge needed.
 
 When you're done, every file you dropped into `Input/` has either been organised into `Music/` with full tags, or is still sitting in `Input/` clearly marked in the database as needing attention.
@@ -95,7 +95,7 @@ When you're done, every file you dropped into `Input/` has either been organised
 
 ## What it does
 
-Takes a folder of unknown, badly-named MP3s and runs them through a four-stage pipeline:
+Takes a folder of unknown, badly-named MP3s and runs them through the Sruthi MP3 Pipeline:
 
 ```
 Input/Tamil/mystery_track.mp3
@@ -112,7 +112,7 @@ Input/Tamil/mystery_track.mp3
 Music/Tamil/2001/Minnale/Vaseegara.mp3
 ```
 
-Every file processed is recorded in a local SQLite database (`music.db`) — the pipeline
+Every file processed is recorded in a local SQLite database (`music.db`) — the Sruthi MP3 Pipeline
 is fully resume-safe and can be stopped and restarted at any point across a collection
 of thousands of files.
 
@@ -147,12 +147,16 @@ For full installation instructions including Windows, see [DOCS/USER_GUIDE.md](D
 
 | Document | What it covers |
 |---|---|
-| [User Guide](DOCS/USER_GUIDE.md) | Install on macOS / Linux / Windows, full CLI reference, running the pipeline, manual review, match rate expectations |
-| [Architecture](DOCS/ARCHITECTURE.md) | Pipeline stages, modules, file structure, status flow, run logging |
+| [User Guide](DOCS/USER_GUIDE.md) | Install on macOS / Linux / Windows, full CLI reference, running the Sruthi MP3 Pipeline, manual review, match rate expectations |
+| [Architecture](DOCS/ARCHITECTURE.md) | Sruthi MP3 Pipeline stages, modules, file structure, status flow, run logging |
 | [Design Decisions](DOCS/DESIGN_DECISIONS.md) | Why ShazamIO was chosen, API comparison table, trade-offs, fallback plan |
 | [Database Reference](DOCS/DATABASE.md) | Full schema, song ID format, persistence, interruption safety |
 | [Music Files Primer](DOCS/MUSIC_FILES_PRIMER.md) | What MP3s are, how ID3 tags work, what audio fingerprinting does, how Shazam works |
-| [Build History](DOCS/BUILD_HISTORY.md) | How the codebase was built session by session using Claude CLI |
+| [Run Statistics](DOCS/RUN_STATISTICS.md) | Results from the 5,550-file batch run — match rates by language, errors, observations |
+| [Batch Run History](DOCS/BATCH_RUN_HISTORY.md) | Record of every full batch run with summary stats |
+| [Releases](DOCS/RELEASES.md) | Version history — what shipped in each release, issues fixed |
+| [System Testing](DOCS/SYSTEM_TESTING.md) | End-to-end test cases covering the full pipeline |
+| [Regression Checklist](DOCS/REGRESSION_CHECKLIST.md) | Manual regression checklist to run before each release |
 | [Contributing](CONTRIBUTING.md) | How to raise bugs and features, PR workflow, issue templates |
 | [Claude CLI Workflow](CLAUDE_CLI_WORKFLOW.md) | How to use Claude CLI to implement issues on this repo |
 
@@ -160,27 +164,6 @@ For full installation instructions including Windows, see [DOCS/USER_GUIDE.md](D
 
 ## Results
 
-| Music type | Match rate |
-|---|---|
-| Tamil film music 1990s–2010s | ~90% |
-| Tamil film music 1970s–1980s | ~75% |
-| Hindi / Bollywood | ~85–90% |
-| English mainstream | ~90%+ |
-| Obscure / pre-1970 | ~40–60% |
+Tested on a 5,550-file library (Tamil, Hindi, English): **68% automated match rate**, 3,768 files identified and moved, 1,700 no-match held for review, 4 errors. Run time: 5h 59m.
 
-Tested on 26 files including 1970s–2000s Ilaiyaraaja and classic Hindi film music.
-86% automated match rate. 0 pipeline errors.
-
----
-
-## Status
-
-**v1.1.0 — released April 3, 2026** — iTunes metadata search, ID3 tag query, `--all`, `--folder` flags.
-Tested on 5,550 files: 68% automated match rate (3,768 identified, 1,700 no_match, 4 errors).
-
-**v1.2.0 — in development** — Transliteration pass (#26) + read-only GUI (#27).
-
-All work is tracked as GitHub issues:
-https://github.com/fordevices/sruthi/issues
-
-Bugs → label `bug` | Features → label `enhancement`
+Full statistics: [DOCS/RUN_STATISTICS.md](DOCS/RUN_STATISTICS.md) · Release notes: [DOCS/RELEASES.md](DOCS/RELEASES.md)

@@ -33,7 +33,7 @@ without reprocessing files that are already done.
 | `python3 main.py --zeroise` | Wipe the database and start fresh | Requires typing `YES` to confirm |
 | `python3 main.py --transliterate` | Transliterate artist ID3 tags to native script for Tamil/Hindi songs | Requires `SARVAM_API_KEY` |
 | `python3 main.py --transliterate --dry-run` | Preview transliterations without writing any tags | Safe first-run check |
-| `python3 gui.py` | Launch read-only NL query GUI in browser | Requires `ANTHROPIC_API_KEY` + streamlit — v1.2.0 |
+| `streamlit run gui.py` | Launch read-only NL query GUI in browser | Requires `ANTHROPIC_API_KEY` + streamlit — v1.2.0 |
 
 For all flags and combinations see [Full CLI reference](#full-cli-reference) below.
 
@@ -60,7 +60,7 @@ For all flags and combinations see [Full CLI reference](#full-cli-reference) bel
 | Feature | Requires |
 |---|---|
 | `--transliterate` (artist name transliteration) | Free Sarvam AI API key — register at [sarvam.ai](https://sarvam.ai); set `SARVAM_API_KEY`. Docs: https://docs.sarvam.ai/api-reference-docs/text/transliterate-text |
-| `python3 gui.py` (NL query GUI) | Claude API key — set `ANTHROPIC_API_KEY`. Plus `pip install streamlit anthropic` |
+| `streamlit run gui.py` (NL query GUI) | Claude API key — set `ANTHROPIC_API_KEY`. Plus `pip install streamlit anthropic` |
 
 ---
 
@@ -586,6 +586,7 @@ hyphens — are preserved exactly.
 | `python3 main.py --metadata-search --folder PATH` | Limit metadata search to songs whose path contains PATH |
 | `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
+| `streamlit run gui.py` | Launch read-only NL query GUI (requires `ANTHROPIC_API_KEY`) |
 
 ---
 
@@ -660,18 +661,37 @@ Results are shown as a table with file paths. **Read-only — nothing is written
    export ANTHROPIC_API_KEY=your_key_here
    ```
 
-2. **Install extra dependencies:**
+2. **Install extra dependencies** (inside your virtual environment if you're using one):
    ```
    pip install streamlit anthropic
    ```
 
+3. **Verify Streamlit installed correctly:**
+   ```
+   streamlit --version
+   ```
+   If this returns `command not found`, your virtual environment is not activated — run
+   `source venv/bin/activate` (macOS/Linux) or `venv\Scripts\activate` (Windows) first,
+   then retry.
+
+   > **Note:** Streamlit is a separate web framework that opens a local server in your
+   > browser. It is not launched with `python3` — use `streamlit run` instead (see below).
+   > Port 8501 is used by default. If something else is already on that port (e.g. another
+   > Streamlit app), pass `--server.port 8502` to use a different one.
+
 ### Running the GUI
 
 ```
-python3 gui.py
+streamlit run gui.py
 ```
 
-Open `http://localhost:8501` in your browser.
+Streamlit will print a local URL — open it in your browser (default `http://localhost:8501`).
+On Linux it will not auto-open the browser; copy the URL from the terminal output manually.
+
+To use a different port:
+```
+streamlit run gui.py --server.port 8502
+```
 
 ### Canned reports
 

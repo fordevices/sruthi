@@ -287,13 +287,13 @@ MP3s from the pre-streaming era — ripped from CDs, filed in folders named by g
 with garbled filenames and wrong or missing ID3 tags. Standard tools (beets, MusicBrainz
 Picard, AcoustID) have poor coverage of Indian film music pre-2000, especially Tamil.
 
-The pipeline behind this page uses ShazamIO to identify songs by audio fingerprint.
+The Sruthi MP3 Pipeline behind this page uses ShazamIO to identify songs by audio fingerprint.
 Shazam's database has excellent Indian music coverage because millions of Indian users have
 been Shazaming those songs for years. After a 5,550-file batch run the library went from
 a pile of mystery files to a clean, tagged, organised collection — 68% matched automatically,
 the rest reviewed by hand.
 
-Sruthi is the read-only inspection layer on top of that pipeline. It exists so you can ask
+Sruthi is the read-only inspection layer on top of the Sruthi MP3 Pipeline. It exists so you can ask
 questions about your library in plain English instead of writing SQL — and because in the AI
 age, you should be able to describe the report you need rather than define it in a query
 language. Standard reports are always available in the sidebar. If none fit, just ask.
