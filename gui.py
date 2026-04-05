@@ -1,7 +1,28 @@
 """
-Sruthi — Read-only query GUI
-Natural language → SQL over music.db via Claude API.
-Run with: streamlit run gui.py
+Sruthi — read-only natural language query GUI
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Streamlit web UI that converts plain English questions into SQLite SELECT
+queries against music.db via the Claude API, then renders the results as a
+table. Never writes to the database or touches files on disk.
+
+Launch:
+  streamlit run gui.py
+
+Two interaction modes:
+  Canned reports — pre-built queries available from the sidebar dropdown;
+                   an inline filter box narrows results within the active report
+  Free-form NL  — user types any question; Claude converts it to SQL
+
+The SCHEMA and EXAMPLES constants below define what Claude knows about the
+database. To add new query patterns, extend EXAMPLES. To expose new tables,
+update SCHEMA. All generated SQL is validated to be a SELECT before execution.
+
+Docs:
+  GUI setup and usage walkthrough — DOCS/USER_GUIDE.md  (GUI section)
+  Database schema reference       — DOCS/DATABASE.md
+Issues:
+  #27 — read-only GUI implementation
 """
 
 import os

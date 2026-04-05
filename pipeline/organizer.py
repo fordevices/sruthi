@@ -1,6 +1,26 @@
 """
-Stage 4 — File organizer.
-Path pattern and sanitize rules follow the README "File organization reference" section.
+Sruthi — Stage 4: file renamer and organizer
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Moves tagged MP3s from Input/ into the output folder tree. Three destination
+patterns are used depending on the song's data:
+
+  Normal:          Music/<Language>/<Year>/<Album>/<Title>.mp3
+  No year:         Music/<Language>/Unknown Year/<Album>/<Title>.mp3
+  Collection-fix:  Music/<Language>/Collections/<Album>/<Title>.mp3
+  Duplicate:       Music/<Language>/Duplicates/<Album>/<Title> (<song_id>).mp3
+
+Duplicate detection is semantic — same title + artist + language already at
+status='done' — not path-based. The original is left in place; the newer copy
+goes to Duplicates/ so both can be compared before discarding.
+
+Illegal filename characters (/ \\ : * ? " < > |) are replaced with '_'.
+All other Unicode — including Tamil and Devanagari script — is preserved.
+
+Docs:
+  Output folder structure explained — DOCS/USER_GUIDE.md  (Output folder structure)
+  Duplicate handling                — DOCS/ARCHITECTURE.md
+  Database final_path field         — DOCS/DATABASE.md
 """
 
 import os

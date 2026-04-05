@@ -1,3 +1,16 @@
+"""
+Sruthi — pipeline configuration constants
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+All path defaults, supported file types, rate limits, and API key resolution
+are defined here. Import this module rather than hard-coding paths or keys
+anywhere else in the pipeline.
+
+Docs:
+  Installation and API key setup — DOCS/USER_GUIDE.md  (Requirements, Installation)
+  Database path reference        — DOCS/DATABASE.md
+"""
+
 import os
 
 INPUT_DIR = "Input"

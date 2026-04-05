@@ -1,18 +1,27 @@
 """
-Collection-fix detection — issue #4.
+Sruthi — collection-fix filename pattern detection
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
 
-Extracts album/movie name clues from filenames for songs that Shazam could
+Extracts album/movie name clues from filenames for songs that ShazamIO could
 not identify. Handles patterns common in Indian music file collections:
 
   Vaseegara (From Minnale).mp3
   Nenjukulle - From Kadal.mp3
   O Saathi Re [From Muqaddar Ka Sikandar].mp3
 
-If a pattern matches, the caller should set:
-  status       = 'identified'
-  id_source    = 'collection-fix'
-  final_title  = returned 'title'
-  final_album  = returned 'album'
+If a pattern matches, identify.py sets:
+  status    = 'identified'   id_source  = 'collection-fix'
+  final_title  = cleaned stem  final_album = extracted album name
+
+These songs land in Music/<Language>/Collections/<Album>/ rather than the
+year-based path, since no year is known at identification time. If the year
+is later resolved via manual review, organizer.py re-routes them on --move.
+
+Docs:
+  Collections/ folder in output structure — DOCS/USER_GUIDE.md  (Output folder structure)
+  Stage 1 overview                        — DOCS/ARCHITECTURE.md
+Issues:
+  #4 — collection-fix pattern detection
 """
 
 import re

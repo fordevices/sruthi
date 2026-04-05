@@ -1,5 +1,20 @@
 """
-Orchestrator — ties all pipeline stages together and writes run logs + summary.json.
+Sruthi — pipeline orchestrator
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Ties all four pipeline stages together, manages run logging, and writes
+runs/<run_id>/summary.json on completion. Also exports the ANSI colour
+constants (GREEN, YELLOW, RED, RESET) used by every other module for
+consistent terminal output.
+
+Run log layout:
+  runs/<run_id>/run.log      — full timestamped output (DEBUG+)
+  runs/<run_id>/summary.json — machine-readable stats (loaded by batch history)
+
+Docs:
+  Pipeline stage overview  — DOCS/ARCHITECTURE.md
+  Batch run history        — DOCS/BATCH_RUN_HISTORY.md
+  Run statistics reference — DOCS/RUN_STATISTICS.md
 """
 
 import json

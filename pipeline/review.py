@@ -1,3 +1,29 @@
+"""
+Sruthi — Stage 2: interactive manual review
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Terminal UI for reviewing songs that could not be identified automatically.
+Supports audio playback (afplay / mpg123 / mpg321 / ffplay) and metadata entry
+in the format: Title | Artist | Album | Year. Partial overrides are supported —
+empty fields keep existing values.
+
+Review modes:
+  no_match — songs where status='no_match' (default)
+  all      — all songs regardless of status; useful for bulk correction
+  flagged  — identified songs with suspicious shazam_year (outside 1940–present)
+             catches Shazam data errors like year=1905 instead of 1995 (issue #16/#17)
+
+Accepted songs are set to status='identified' with override_used=1 so the
+tagging and organisation stages pick them up on the next --move run.
+
+Docs:
+  Manual review walkthrough — DOCS/USER_GUIDE.md  (Manual review)
+  Flagged year handling     — DOCS/USER_GUIDE.md  (Catch bad years from Shazam)
+Issues:
+  #16, #17 — suspicious year detection and --flagged mode
+  #15      — --folder scoping for review queue
+"""
+
 import shlex
 import subprocess
 import sys

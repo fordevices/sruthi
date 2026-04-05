@@ -1,10 +1,31 @@
 """
-Transliteration pass — converts ID3 Artist tags for Tamil and Hindi songs
-from Roman script to native script using Sarvam AI.
+Sruthi — transliteration pass (--transliterate)
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
 
-Only the TPE1 (Artist) tag is updated. Filenames and folder names are unchanged.
-Each unique (roman_name, language) pair is sent to Sarvam once and cached in
-the artist_transliterations table. Re-runs use the cache at zero API cost.
+Converts the TPE1 (Artist) ID3 tag for done Tamil and Hindi songs from Roman
+script to native script using the Sarvam AI transliterate API.
+
+  Tamil example: "Ilaiyaraaja"    → "இளையராஜா"
+  Hindi example: "Lata Mangeshkar" → "लता मंगेशकर"
+
+Only the Artist tag is touched. Filenames, folder names, and all other tags
+are unchanged. Each unique (roman_name, language) pair is sent to Sarvam once
+and cached in the artist_transliterations table — re-runs and large collections
+with repeated artist names incur zero extra API calls.
+
+Compound artist strings (e.g. "A.R. Rahman & Lata Mangeshkar") are split on
+' & ' and ', ', each name transliterated independently, then reassembled.
+
+Prerequisite: SARVAM_API_KEY environment variable.
+  export SARVAM_API_KEY=your_key_here
+  Register free at https://sarvam.ai
+
+Docs:
+  Transliteration pass walkthrough  — DOCS/USER_GUIDE.md  (Transliteration pass)
+  artist_transliterations table     — DOCS/DATABASE.md
+Issues:
+  #26 — transliteration pass implementation
+  #25 — song-level language detection (open; current detection is folder-based)
 """
 
 import re

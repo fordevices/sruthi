@@ -1,19 +1,30 @@
 """
-AcoustID + MusicBrainz fallback identification — issue #2.
+Sruthi — AcoustID fallback identification pass (--acoustid)
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
 
-Processes no_match songs by:
-  1. Fingerprinting with fpcalc (Chromaprint)
-  2. Querying AcoustID API for candidate recordings
-  3. Presenting the best match to the user for verification with playback
+Second audio fingerprinting pass for songs that ShazamIO could not identify.
+Uses the open AcoustID + MusicBrainz database via the Chromaprint fpcalc binary.
+Presents the best candidate to the user for verification before saving.
+
+Flow per song:
+  1. Fingerprint with fpcalc (Chromaprint)
+  2. Query AcoustID API — returns candidate recordings from MusicBrainz
+  3. Present best match with confidence score for user verification
   4. On acceptance: status='identified', id_source='acoustid'
 
-Prerequisites:
-  - fpcalc binary (Chromaprint):
-      macOS:   brew install chromaprint
-      Linux:   sudo apt install libchromaprint-tools
-      Windows: download fpcalc from https://acoustid.org/chromaprint
-  - ACOUSTID_API_KEY environment variable (free at https://acoustid.org)
+Prerequisites (see DOCS/USER_GUIDE.md — AcoustID fallback pass):
+  - fpcalc binary: brew install chromaprint / apt install libchromaprint-tools
+  - ACOUSTID_API_KEY env var — free registration at https://acoustid.org
   - pip install pyacoustid
+
+This is the recommended fallback if ShazamIO ever becomes unavailable.
+See DOCS/DESIGN_DECISIONS.md for the full rationale and comparison table.
+
+Docs:
+  AcoustID setup and usage  — DOCS/USER_GUIDE.md  (AcoustID fallback pass)
+  Why ShazamIO was chosen    — DOCS/DESIGN_DECISIONS.md
+Issues:
+  #2 — AcoustID pass implementation
 """
 
 import shutil

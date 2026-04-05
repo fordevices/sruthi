@@ -1,6 +1,24 @@
 """
-Stage 3 — Mutagen ID3 tag writer.
-Field priority and ID3 patterns follow the README "Mutagen ID3 tagging reference" section.
+Sruthi — Stage 3: Mutagen ID3 tag writer
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Writes ID3 tags into each identified MP3 using Mutagen. Field priority rule:
+final_* wins over shazam_* wins over empty. A TXXX:PIPELINE_ID frame is always
+written with the song_id so files can be cross-referenced against music.db even
+after being moved or renamed.
+
+Tag frames written:
+  TIT2 — title    TPE1 — artist    TALB — album
+  TDRC — year     TCON — genre     APIC — cover art (from shazam_cover_url, non-fatal)
+  TXXX:PIPELINE_ID — Sruthi song_id tracking tag
+
+Cover art download is best-effort — failure is logged but never blocks tagging.
+A JSON snapshot of the previous tags is saved to meta_before in the DB for auditing.
+
+Docs:
+  ID3 tag primer and frame reference — DOCS/MUSIC_FILES_PRIMER.md
+  Field priority rule                — DOCS/ARCHITECTURE.md
+  Database meta_before/meta_after    — DOCS/DATABASE.md
 """
 
 import json

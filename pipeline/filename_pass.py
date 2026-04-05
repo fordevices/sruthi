@@ -1,12 +1,23 @@
 """
-Metadata search pass — issue #3 (renamed from filename pass).
+Sruthi — metadata search pass (--metadata-search)
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
 
-Third identification pass for files that Shazam and AcoustID both failed on.
-Searches MusicBrainz and iTunes using the best available text signals:
-existing ID3 tags (title, artist) are preferred over the cleaned filename.
+Third identification pass for songs that Shazam and AcoustID both failed on.
+Builds the best available text query from existing ID3 tags (TIT2 + TPE1 preferred
+over cleaned filename), searches both MusicBrainz and iTunes, and presents up to
+6 candidates for manual selection. No API key required for either service.
 
-No API key required — MusicBrainz and iTunes Search are both free and open.
+Query priority: existing ID3 tags (TIT2 + TPE1) > cleaned filename stem.
 Sets id_source='metadata-search' on acceptance.
+
+MusicBrainz rate limit: 1 request/second (_MB_SLEEP = 1.1s enforced).
+iTunes Search API: no rate limit documented; 5-result limit applied client-side.
+
+Docs:
+  Metadata search pass walkthrough — DOCS/USER_GUIDE.md  (Metadata search pass)
+Issues:
+  #3  — original metadata search implementation
+  #13 — iTunes added as second source; ID3 tag priority over filename
 """
 
 import os

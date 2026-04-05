@@ -1,3 +1,19 @@
+"""
+Sruthi — CLI entry point
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Parses command-line arguments and dispatches to the appropriate pipeline pass
+or standalone command. All user-facing flags are defined here; the actual work
+lives in the pipeline/ package.
+
+Docs:
+  Full CLI reference      — DOCS/USER_GUIDE.md  (Quick command reference, Full CLI reference)
+  Pipeline stage overview — DOCS/ARCHITECTURE.md
+Issues:
+  #13 — --metadata-search, --all, --folder flags
+  #26 — --transliterate flag
+"""
+
 import argparse
 import sqlite3
 
@@ -9,6 +25,7 @@ from pipeline.db import get_connection
 # ---------------------------------------------------------------------------
 
 def cmd_check():
+    """Verify DB tables exist and print row counts. Safe to run at any time."""
     conn = get_connection()
     try:
         rows = conn.execute(
@@ -36,6 +53,7 @@ def cmd_check():
 # ---------------------------------------------------------------------------
 
 def cmd_zeroise():
+    """Wipe all songs and runs from music.db after interactive confirmation."""
     conn = get_connection()
     try:
         total = conn.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
@@ -58,6 +76,7 @@ def cmd_zeroise():
 # ---------------------------------------------------------------------------
 
 def cmd_stats():
+    """Print a summary of music.db — status breakdown, language breakdown, top albums."""
     conn = get_connection()
     try:
         print("Status breakdown:")
@@ -97,6 +116,10 @@ def cmd_stats():
 # ---------------------------------------------------------------------------
 
 def main():
+    """
+    Parse CLI arguments and dispatch to the appropriate command or pipeline pass.
+    See DOCS/USER_GUIDE.md — Full CLI reference for the complete flag list.
+    """
     parser = argparse.ArgumentParser(
         description="Music Pipeline",
         formatter_class=argparse.RawTextHelpFormatter,

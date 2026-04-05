@@ -1,3 +1,26 @@
+"""
+Sruthi — database access layer
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Single source of truth for all reads and writes to music.db. Creates the
+schema on first connect and applies additive column migrations automatically
+so existing databases are never broken by upgrades.
+
+Tables:
+  songs                  — one row per MP3, tracks status through all pipeline stages
+  runs                   — one row per pipeline run, summary stats written at finish
+  artist_transliterations — cache for Sarvam AI transliteration results (issue #26)
+
+Status lifecycle:
+  pending → identified → tagged → done
+           ↘ no_match (held for manual review)
+           ↘ error    (retried on next run)
+
+Docs:
+  Full schema and field descriptions — DOCS/DATABASE.md
+  Pipeline stage overview            — DOCS/ARCHITECTURE.md
+"""
+
 import sqlite3
 from datetime import datetime, timezone
 

@@ -1,3 +1,26 @@
+"""
+Sruthi — Stage 1: ShazamIO audio fingerprint identification
+Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
+
+Walks a source path for MP3 files, fingerprints each one via ShazamIO, and
+writes the result to music.db. Files are deduplicated by MD5 hash — re-running
+on the same file is a no-op unless it previously errored. Language is inferred
+from the containing folder name (e.g. Input/Tamil/ → language='Tamil').
+
+Identification sources set by this module:
+  id_source='shazam'          — matched by ShazamIO fingerprint
+  id_source='collection-fix'  — Shazam failed but filename contained a
+                                 "from <Album>" clue (see collection.py, issue #4)
+
+Files shorter than 8 seconds cannot be fingerprinted reliably and are
+immediately set to no_match with an explanatory error_msg.
+
+Docs:
+  How ShazamIO fingerprinting works — DOCS/MUSIC_FILES_PRIMER.md
+  Design rationale for ShazamIO     — DOCS/DESIGN_DECISIONS.md
+  Stage 1 in the pipeline overview  — DOCS/ARCHITECTURE.md
+"""
+
 import asyncio
 import hashlib
 import os
@@ -20,6 +43,7 @@ from pipeline.runner import GREEN, YELLOW, RED, RESET
 
 
 def compute_md5(file_path: str) -> str:
+    """Return the MD5 hex digest of a file. Used as the deduplication key in music.db."""
     h = hashlib.md5()
     with open(file_path, "rb") as f:
         while chunk := f.read(8192):
@@ -28,6 +52,11 @@ def compute_md5(file_path: str) -> str:
 
 
 def detect_language(file_path: str) -> str:
+    """
+    Infer language from the containing folder name by walking up the path.
+    Matches case-insensitively against config.LANGUAGES.
+    Returns 'Other' if no match found. See issue #25 for song-level detection plans.
+    """
     path = Path(os.path.abspath(file_path))
     languages_lower = {lang.lower(): lang for lang in config.LANGUAGES}
     for parent in path.parents:
@@ -37,6 +66,11 @@ def detect_language(file_path: str) -> str:
 
 
 def walk_mp3s(source_path: str) -> list[str]:
+    """
+    Recursively collect all MP3 files under source_path.
+    Accepts a single file path or a directory. Returns sorted absolute paths.
+    Only extensions in config.SUPPORTED_EXTENSIONS are included.
+    """
     results = []
     source = Path(os.path.abspath(source_path))
     if source.is_file():
