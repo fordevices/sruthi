@@ -10,7 +10,7 @@ ID3 tags are wrong or empty, and standard tools (beets, MusicBrainz Picard) give
 coverage — particularly for Tamil, Hindi, and other South Asian music.
 
 Sruthi identifies songs by audio fingerprint via ShazamIO (no API key required), enriches
-metadata from MusicBrainz and iTunes as fallbacks, writes correct ID3 tags using Mutagen,
+metadata from iTunes as a fallback, writes correct ID3 tags using Mutagen,
 then moves each file into a structured folder tree (`Music/<Language>/<Year>/<Album>/`).
 Every file is tracked in a local SQLite database, making the process fully resume-safe —
 stop at any point and re-run without reprocessing files already done.
@@ -24,7 +24,7 @@ stop at any point and re-run without reprocessing files already done.
 | `python3 main.py Input/` | Full pipeline — identify, tag, and move everything | Resumes safely if interrupted |
 | `python3 main.py Input/ --stage 1` | Identify only (Shazam fingerprinting) | First step on a new batch |
 | `python3 main.py --review` | Review unmatched files interactively | After Stage 1 finds `no_match` files |
-| `python3 main.py --metadata-search` | Search MusicBrainz using ID3 tags + cleaned filename | Second pass for `no_match` files; no API key needed |
+| `python3 main.py --metadata-search` | Search iTunes using ID3 tags + cleaned filename | Second pass for `no_match` files; no API key needed |
 | `python3 main.py --acoustid` | AcoustID audio fingerprint fallback | Requires `fpcalc` binary and AcoustID API key |
 | `python3 main.py --move` | Tag and move all identified files | Run after any identification pass |
 | `python3 main.py --stats` | Show DB summary (counts, languages, top albums) | No files touched |
@@ -386,17 +386,17 @@ and `--limit`.
 
 ## Metadata search pass
 
-For files that Shazam failed on, a third pass searches both MusicBrainz and iTunes
-using the best text signals available — existing ID3 tags (title, artist) are read
-from the file first, with the cleaned filename used as a fallback when tags are absent.
-No API key or binary dependency required for either service.
+For files that Shazam failed on, a third pass searches iTunes using the best text
+signals available — existing ID3 tags (title, artist) are read from the file first,
+with the cleaned filename used as a fallback when tags are absent. No API key or
+binary dependency required.
 
 ```
 python3 main.py --metadata-search
 ```
 
-For each `no_match` file the pipeline builds a search query and shows up to 6 candidates
-(up to 3 from MusicBrainz, up to 3 from iTunes), each labelled with its source:
+For each `no_match` file the pipeline builds a search query and shows up to 3 iTunes
+candidates:
 
 ```
 ────────────────────────────────────────────
@@ -406,8 +406,8 @@ Language : Hindi
 Status   : no_match
 Search   : 'o saathi re'
 ── Candidates ──
-  [1]  92%  [MB    ]  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
-  [2]  74%  [MB    ]  O Saathi Re — Lata Mangeshkar  |  Compilation  1985
+  [1]       [iTunes]  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
+  [2]       [iTunes]  O Saathi Re — Lata Mangeshkar  |  Compilation  1985
   [3]       [iTunes]  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
 ────────────────────────────────────────────
 [1/2/3] Pick  [e] Edit manually  [p] Play  [s] Skip  [q] Quit
@@ -437,7 +437,7 @@ python3 main.py --move
 ## AcoustID fallback pass
 
 For songs that Shazam could not identify and that have no collection pattern in their
-filename, you can run a second identification pass using AcoustID + MusicBrainz.
+filename, you can run a second identification pass using AcoustID.
 
 ### Prerequisites
 
@@ -479,7 +479,7 @@ python3 main.py --acoustid                # test on that small batch
 
 For each `no_match` file, the pipeline will:
 - Fingerprint the audio using `fpcalc`
-- Query AcoustID and retrieve the best matching recording from MusicBrainz
+- Query AcoustID and retrieve the best matching recording
 - Show you the proposed match with a confidence percentage
 
 ```
@@ -582,7 +582,7 @@ hyphens — are preserved exactly.
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs to `Music/` (stages 3+4, no source needed) |
 | `python3 main.py --move --dry-run` | Preview what `--move` would do without changing anything |
-| `python3 main.py --metadata-search` | Search MusicBrainz + iTunes for `no_match` files using ID3 tags or filename |
+| `python3 main.py --metadata-search` | Search iTunes for `no_match` files using ID3 tags or filename |
 | `python3 main.py --metadata-search --all` | Same but runs on every song regardless of status |
 | `python3 main.py --metadata-search --folder PATH` | Limit metadata search to songs whose path contains PATH |
 | `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |

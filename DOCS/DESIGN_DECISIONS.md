@@ -119,13 +119,11 @@ cleaned filename      →  any result?  →  show candidates
 
 | Service | Auth required | Strengths for this use case |
 |---|---|---|
-| **MusicBrainz** | None | Open database; strong for Western, classical, and well-catalogued Indian film music; returns confidence scores |
 | **iTunes Search API** (Apple) | None | Apple Music catalog; excellent coverage of Tamil and Hindi film music; clean structured data; no rate limit documented |
 | **Deezer API** | None | Good mainstream coverage; decent Indian music catalog; straightforward JSON response |
 
-Both MusicBrainz and iTunes are queried with no API key or account. MusicBrainz enforces
-a strict 1 req/sec rate limit (handled by `time.sleep(1.1)` between calls). iTunes has no
-published rate limit but is used conservatively. Deezer is available as a future extension.
+iTunes is queried with no API key or account and has no published rate limit. Deezer is
+available as a future extension.
 
 The pass labels each candidate with which signal was used (tags vs filename) so the user
 can judge the result in context.

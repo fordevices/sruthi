@@ -26,8 +26,8 @@ already in the database:
 
 | Pass | Command | Module | What it does |
 |---|---|---|---|
-| Metadata search | `--metadata-search` | `pipeline/filename_pass.py` | Reads ID3 tags + cleaned filename; searches MusicBrainz text API; interactive candidate review |
-| AcoustID | `--acoustid` | `pipeline/acoustid_pass.py` | Audio fingerprint via `fpcalc`; queries AcoustID + MusicBrainz; interactive candidate review |
+| Metadata search | `--metadata-search` | `pipeline/filename_pass.py` | Reads ID3 tags + cleaned filename; searches iTunes; interactive candidate review |
+| AcoustID | `--acoustid` | `pipeline/acoustid_pass.py` | Audio fingerprint via `fpcalc`; queries AcoustID; interactive candidate review |
 
 After either pass accepts a match, run `--move` to tag and move the newly identified files.
 
@@ -74,14 +74,14 @@ moves. Routes songs to standard, `Collections/`, or `Duplicates/` output paths. 
 
 **`pipeline/filename_pass.py`** — Metadata search pass (`--metadata-search`, issue #3).
 Reads existing ID3 tags (`TIT2`, `TPE1`) from each `no_match` file first; falls back to the
-cleaned filename when tags are absent. Searches MusicBrainz text API; presents up to 3
-candidates for interactive verification. No API key or binary required. Sets
-`id_source='metadata-search'` on acceptance.
+cleaned filename when tags are absent. Searches iTunes; presents up to 3 candidates for
+interactive verification. No API key or binary required. Sets `id_source='metadata-search'`
+on acceptance.
 
 **`pipeline/acoustid_pass.py`** — AcoustID fallback pass (`--acoustid`, issue #2).
-Fingerprints files with `fpcalc`, queries the AcoustID API, fetches recording metadata from
-MusicBrainz, and presents matches interactively. Requires the `fpcalc` binary (Chromaprint)
-and the `ACOUSTID_API_KEY` environment variable. Sets `id_source='acoustid'` on acceptance.
+Fingerprints files with `fpcalc`, queries the AcoustID API, and presents matches
+interactively. Requires the `fpcalc` binary (Chromaprint) and the `ACOUSTID_API_KEY`
+environment variable. Sets `id_source='acoustid'` on acceptance.
 
 **`pipeline/runner.py`** — Orchestrator. Ties all four stages together, manages run logging
 (`setup_run_logging`), writes `summary.json` (`write_summary`), and exposes `run_pipeline()`.
@@ -296,8 +296,8 @@ runs/2026-03-21_14-32-00/
 | `python3 main.py --stats` | Print DB summary — no files touched |
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs (stages 3+4, no source needed) |
-| `python3 main.py --metadata-search` | Metadata search pass: ID3 tags + filename → MusicBrainz, interactive |
-| `python3 main.py --acoustid` | AcoustID pass: audio fingerprint → MusicBrainz, interactive |
+| `python3 main.py --metadata-search` | Metadata search pass: ID3 tags + filename → iTunes, interactive |
+| `python3 main.py --acoustid` | AcoustID pass: audio fingerprint → AcoustID, interactive |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (requires typing YES) |
 
 ---

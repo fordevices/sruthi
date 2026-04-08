@@ -3,12 +3,12 @@ Sruthi — AcoustID fallback identification pass (--acoustid)
 Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
 
 Second audio fingerprinting pass for songs that ShazamIO could not identify.
-Uses the open AcoustID + MusicBrainz database via the Chromaprint fpcalc binary.
+Uses the open AcoustID database via the Chromaprint fpcalc binary.
 Presents the best candidate to the user for verification before saving.
 
 Flow per song:
   1. Fingerprint with fpcalc (Chromaprint)
-  2. Query AcoustID API — returns candidate recordings from MusicBrainz
+  2. Query AcoustID API — returns candidate recordings
   3. Present best match with confidence score for user verification
   4. On acceptance: status='identified', id_source='acoustid'
 

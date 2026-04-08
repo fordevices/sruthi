@@ -148,7 +148,7 @@ def main():
     parser.add_argument("--move", action="store_true",
                         help="Tag and move all identified songs to Music/ (stages 3+4, no source needed)")
     parser.add_argument("--metadata-search", action="store_true", dest="metadata_search",
-                        help="Metadata search pass: query MusicBrainz and iTunes using ID3 tags and cleaned filename, review interactively")
+                        help="Metadata search pass: query iTunes using ID3 tags and cleaned filename, review interactively")
     parser.add_argument("--folder", type=str, default=None,
                         help="Limit --metadata-search or --review to songs whose path contains this string")
     parser.add_argument("--acoustid", action="store_true",

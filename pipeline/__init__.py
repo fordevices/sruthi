@@ -14,8 +14,8 @@ Module map:
   review.py        — Stage 2: interactive manual review CLI
   tagger.py        — Stage 3: Mutagen ID3 tag writer
   organizer.py     — Stage 4: file renamer and mover
-  filename_pass.py — --metadata-search: MusicBrainz + iTunes text search pass
-  acoustid_pass.py — --acoustid: AcoustID + MusicBrainz fingerprint fallback
+  filename_pass.py — --metadata-search: iTunes text search pass
+  acoustid_pass.py — --acoustid: AcoustID fingerprint fallback
   transliterate.py — --transliterate: Sarvam AI artist name transliteration
   collection.py    — collection-fix: album clue extraction from filenames
 

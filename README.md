@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > Open-source MP3 library tool that identifies songs by audio fingerprint, repairs and
-> enriches ID3 metadata from ShazamIO, MusicBrainz, and iTunes, then organises files
+> enriches ID3 metadata from ShazamIO and iTunes, then organises files
 > into a clean `Language/Year/Album/` folder tree. Built for large multilingual collections
 > — Tamil, Hindi, English, and beyond. Core pipeline runs with no API keys.
 > Optional features (transliteration, NL query GUI) use Sarvam AI and Claude API.
@@ -16,7 +16,7 @@ Works on macOS, Linux, and Windows.
 
 If you have a large MP3 collection — Tamil classics, old Bollywood tracks, English songs — where the filenames are garbled (`track01.mp3`, `sattam_naanbaneyennathuuyir.mp3`), the ID3 tags are wrong or empty, and standard tools like beets or MusicBrainz Picard give poor results on Indian music, Sruthi is built for that problem.
 
-It identifies songs by audio fingerprint via ShazamIO, fills in title, artist, album, and year, then moves each file to the right place. For anything Shazam misses, it searches MusicBrainz and iTunes using existing tags or the cleaned filename. What cannot be identified automatically goes to a manual review queue. Here is how it works.
+It identifies songs by audio fingerprint via ShazamIO, fills in title, artist, album, and year, then moves each file to the right place. For anything Shazam misses, it searches iTunes using existing tags or the cleaned filename. What cannot be identified automatically goes to a manual review queue. Here is how it works.
 
 **1. Sort by language, drop them in.**
 Create language folders inside `Input/` and copy your files there. Filenames don't matter at all — that's the whole point.
@@ -34,11 +34,11 @@ Sruthi sends a short audio fingerprint of each file to Shazam's database. No API
 Recordings not in Shazam's database, older tracks, or live versions get saved as `no_match` and held for the next steps. Run `python3 main.py --stats` to see how many there are.
 
 **4. Try the metadata search pass — no sign-up needed.**
-Sruthi reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches both MusicBrainz and iTunes with the best signal available:
+Sruthi reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches iTunes with the best signal available:
 ```bash
 python3 main.py --metadata-search
 ```
-For each file you see up to 6 candidates (3 from MusicBrainz, 3 from iTunes) and pick the right one. No account or API key required. This resolves a large chunk of what Shazam missed.
+For each file you see up to 3 candidates and pick the right one. No account or API key required. This resolves a large chunk of what Shazam missed.
 
 **5. Optionally, try the AcoustID pass — deeper fingerprinting, free API key.**
 AcoustID uses a different audio fingerprint algorithm that catches many songs Shazam misses. It requires a free API key from [acoustid.org](https://acoustid.org) (under 2 minutes to register) and the `fpcalc` binary:

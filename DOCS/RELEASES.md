@@ -37,9 +37,8 @@ the database or touches files. Requires a Claude API key and `pip install stream
 ### New features
 
 **iTunes added to metadata search**
-The `--metadata-search` pass now queries both MusicBrainz and iTunes (previously
-MusicBrainz only), showing up to 6 candidates per file. iTunes has strong coverage of
-commercial Bollywood and Tamil film music, filling gaps where MusicBrainz is sparse.
+The `--metadata-search` pass now queries iTunes, showing up to 3 candidates per file.
+iTunes has strong coverage of commercial Bollywood and Tamil film music.
 
 **ID3 tag priority in metadata search**
 Search queries now read existing ID3 tags (title, artist) from the file first, falling
@@ -82,7 +81,7 @@ Every file is recorded by MD5 hash in `music.db`. Re-running the same command sk
 files already at `status=done`. Safe to interrupt and restart on collections of any size.
 
 **AcoustID fallback pass** (`--acoustid`)
-Secondary audio fingerprinting pass using the open AcoustID + MusicBrainz database.
+Secondary audio fingerprinting pass using the open AcoustID database.
 Catches songs that Shazam cannot identify. Requires `fpcalc` (Chromaprint) and a free
 AcoustID API key.
 
