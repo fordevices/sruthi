@@ -280,7 +280,7 @@ def run_identification(source_path: str, run_id: str) -> dict:
                     print(f"{RED}[{song_id}] ! error       ({i}/{total}) {lang} | {name} — {err}{RESET}")
                     counts["errors"] += 1
 
-            if i < total:
+            if song and i < total:
                 await asyncio.sleep(config.SHAZAM_SLEEP_SEC)
 
     asyncio.run(_run())
