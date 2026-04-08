@@ -157,7 +157,8 @@ def tag_file(song: dict, dry_run: bool = False) -> bool:
         return True
 
     except Exception as e:
-        update_song(song_id, status="error", error_msg=str(e))
+        err_msg = str(e) or type(e).__name__
+        update_song(song_id, status="error", error_msg=err_msg)
         return False
 
 
@@ -205,7 +206,14 @@ def run_tagging(dry_run: bool = False) -> dict:
             print(f"{GREEN}[{song_id}] ✓ tagged   {title} — {artist}{suffix}{RESET}")
         else:
             errors += 1
-            err = song.get("error_msg", "unknown error")
+            conn = get_connection()
+            try:
+                row = conn.execute(
+                    "SELECT error_msg FROM songs WHERE song_id = ?", (song_id,)
+                ).fetchone()
+                err = (row["error_msg"] if row else None) or "unknown error"
+            finally:
+                conn.close()
             name = song.get("file_path", "").split("/")[-1]
             print(f"{RED}[{song_id}] ✗ error    {name} — {err}{RESET}")
 
