@@ -5,6 +5,66 @@ Update this after each run with the summary.json stats and any observations.
 
 ---
 
+## Run 2 — 2026-04-08
+
+| Field | Value |
+|---|---|
+| Run ID | `2026-04-08_08-14-07` |
+| Started | 2026-04-08 08:14 |
+| Finished | 2026-04-08 11:49 |
+| Duration | 3h 35m (12,902s) |
+| Source | `Input/Tamil` (Tamil re-run + error retry) |
+| Stages | 1, 3, 4 |
+| DB zeroed before run | No |
+
+### Stage 1 Results
+
+| Metric | Count | % of total |
+|---|---|---|
+| Files total | 3,879 | 100% |
+| Newly identified | 1,101 | 28% |
+| No match | 1,506 | 39% |
+| Already done (skipped) | 1,271 | 33% |
+| Errors (network timeouts) | 591 | 15% |
+| Shazam calls made | 2,607 | — |
+
+### Error retry (same day)
+
+594 songs in `error` status were retried after fixing a bug where the 1-second
+Shazam rate-limit sleep was applied to skipped files, making re-runs ~70 minutes
+slower than necessary (#29). On retry with the fix in place:
+
+| Metric | Count |
+|---|---|
+| Retried | 594 |
+| Identified on retry | 576 |
+| No match on retry | 15 |
+| Still errored | 2 |
+| **Retry success rate** | **97%** |
+
+All 121 tagging failures (Errno 13 — permission denied, files owned by different
+user) were resolved with `sudo chown` and successfully tagged and moved.
+
+### End-of-day state
+
+| Status | Count |
+|---|---|
+| done | 4,859 |
+| no_match | 3,218 |
+| error | 2 (corrupt files — "Unrecognized format") |
+
+### Observations
+
+- **97% of errors were network timeouts**, not genuine identification failures.
+  All retried successfully once the sleep-on-skip bug was fixed.
+- Tamil is the dominant no-match language — 3,218 remaining no_match files are
+  almost entirely Tamil, consistent with Run 1 observations on pre-2000 coverage.
+- MusicBrainz removed from `--metadata-search` this session (#28) — iTunes only.
+- Next steps: `--metadata-search` on the 3,218 no_match files; then manual
+  `--review` for anything iTunes can't resolve.
+
+---
+
 ## Run 1 — 2026-04-04
 
 | Field | Value |
