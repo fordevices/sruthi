@@ -297,6 +297,7 @@ runs/2026-03-21_14-32-00/
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs (stages 3+4, no source needed) |
 | `python3 main.py --metadata-search` | Metadata search pass: ID3 tags + filename → iTunes, interactive |
+| `python3 main.py --retry-no-match Input/` | Reset all no_match → pending and re-run Stage 1 |
 | `python3 main.py --acoustid` | AcoustID pass: audio fingerprint → AcoustID, interactive |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (requires typing YES) |
 

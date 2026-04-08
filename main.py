@@ -155,6 +155,8 @@ def main():
                         help="AcoustID fallback pass: fingerprint no_match songs and review interactively")
     parser.add_argument("--transliterate", action="store_true",
                         help="Transliterate Artist ID3 tags to native script for Tamil/Hindi songs (requires SARVAM_API_KEY)")
+    parser.add_argument("--retry-no-match", action="store_true", dest="retry_no_match",
+                        help="Re-run Shazam on all no_match songs (resets them to pending, then runs Stage 1)")
 
     args = parser.parse_args()
 
@@ -184,6 +186,24 @@ def main():
     if args.transliterate:
         from pipeline.transliterate import run_transliterate_pass
         run_transliterate_pass(dry_run=args.dry_run)
+        return
+
+    if args.retry_no_match:
+        if not args.source:
+            print("--retry-no-match requires a source path, e.g.: python3 main.py --retry-no-match Input/")
+            return
+        conn = get_connection()
+        try:
+            result = conn.execute(
+                "UPDATE songs SET status='pending', error_msg=NULL WHERE status='no_match'"
+            )
+            conn.commit()
+            count = result.rowcount
+        finally:
+            conn.close()
+        print(f"Reset {count} no_match songs to pending — running Stage 1...")
+        from pipeline.runner import run_pipeline
+        run_pipeline(source_path=args.source, stages=[1], dry_run=args.dry_run)
         return
 
     if args.stats:

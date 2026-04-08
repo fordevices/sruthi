@@ -25,6 +25,7 @@ stop at any point and re-run without reprocessing files already done.
 | `python3 main.py Input/ --stage 1` | Identify only (Shazam fingerprinting) | First step on a new batch |
 | `python3 main.py --review` | Review unmatched files interactively | After Stage 1 finds `no_match` files |
 | `python3 main.py --metadata-search` | Search iTunes using ID3 tags + cleaned filename | Second pass for `no_match` files; no API key needed |
+| `python3 main.py --retry-no-match Input/` | Re-run Shazam on all no_match songs | Worth trying after network issues or after time has passed |
 | `python3 main.py --acoustid` | AcoustID audio fingerprint fallback | Requires `fpcalc` binary and AcoustID API key |
 | `python3 main.py --move` | Tag and move all identified files | Run after any identification pass |
 | `python3 main.py --stats` | Show DB summary (counts, languages, top albums) | No files touched |
@@ -585,6 +586,7 @@ hyphens — are preserved exactly.
 | `python3 main.py --metadata-search` | Search iTunes for `no_match` files using ID3 tags or filename |
 | `python3 main.py --metadata-search --all` | Same but runs on every song regardless of status |
 | `python3 main.py --metadata-search --folder PATH` | Limit metadata search to songs whose path contains PATH |
+| `python3 main.py --retry-no-match Input/` | Re-run Shazam on all no_match songs |
 | `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 | `streamlit run gui.py` | Launch read-only NL query GUI (requires `ANTHROPIC_API_KEY`) |
