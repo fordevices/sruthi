@@ -132,6 +132,49 @@ can judge the result in context.
 
 ---
 
+## Multi-probe Shazam strategy (2026-04-09, issue #32)
+
+### Why the default probe misses
+
+ShazamIO's `recognize()` sends a single ~10-second fingerprint window per file.
+For songs longer than 36 seconds, it automatically skips to the midpoint
+(`converter.py:125`). For shorter songs it starts from the beginning.
+
+Older Tamil and Hindi film music frequently opens with a 30–60 second
+orchestral intro before the main vocals begin. Shazam's fingerprint database
+indexes the chorus and vocal hook — not the intro. The default midpoint probe
+often lands in the intro for these songs, missing the indexed section entirely.
+
+**Evidence:** Phone Shazam tests on songs that the pipeline returned `no_match`
+confirmed they are in Shazam's database. The phone app worked because the user
+held it during the chorus, not the intro.
+
+### The fix — four probes per file
+
+A new automated pass (`--multiprobe`, `pipeline/multiprobe_pass.py`) probes
+each `no_match` file at four positions: **15%, 35%, 55%, and 75%** of the
+song's duration. For each probe it extracts a 15-second WAV slice (pydub),
+passes the bytes to `shazam.recognize(bytes)` — supported natively by the
+ShazamIO Rust core — and stops at the first match.
+
+| Parameter | Value |
+|---|---|
+| Probe positions | 15%, 35%, 55%, 75% of duration |
+| Window per probe | 15 seconds |
+| Max API calls per song | 4 |
+| Sleep between probes | `SHAZAM_SLEEP_SEC` (2s) — same as main pass |
+| id_source on match | `shazam-multiprobe` |
+
+### What this does not solve
+
+Songs that are genuinely absent from Shazam's database — obscure regional
+tracks, private recordings, or very early film music (pre-1970) with no digital
+catalogue presence — will not be identified by any number of probes. The
+`--multiprobe` pass converts "wrong window" misses into hits; it cannot create
+fingerprint data that does not exist.
+
+---
+
 ## Late design discussion — ID3 artist name transliteration (2026-04-04)
 
 ### Context

@@ -157,6 +157,8 @@ def main():
                         help="Transliterate Artist ID3 tags to native script for Tamil/Hindi songs (requires SARVAM_API_KEY)")
     parser.add_argument("--retry-no-match", action="store_true", dest="retry_no_match",
                         help="Re-run Shazam on all no_match songs (resets them to pending, then runs Stage 1)")
+    parser.add_argument("--multiprobe", action="store_true",
+                        help="Multi-probe pass: re-attempt Shazam on no_match songs at 4 time positions (issue #32)")
 
     args = parser.parse_args()
 
@@ -186,6 +188,11 @@ def main():
     if args.transliterate:
         from pipeline.transliterate import run_transliterate_pass
         run_transliterate_pass(dry_run=args.dry_run)
+        return
+
+    if args.multiprobe:
+        from pipeline.multiprobe_pass import run_multiprobe_pass
+        run_multiprobe_pass()
         return
 
     if args.retry_no_match:

@@ -26,6 +26,7 @@ already in the database:
 
 | Pass | Command | Module | What it does |
 |---|---|---|---|
+| Multi-probe | `--multiprobe` | `pipeline/multiprobe_pass.py` | Re-probes no_match songs at 4 time positions (15/35/55/75% of duration); automated, no review step |
 | Metadata search | `--metadata-search` | `pipeline/filename_pass.py` | Reads ID3 tags + cleaned filename; searches iTunes; interactive candidate review |
 | AcoustID | `--acoustid` | `pipeline/acoustid_pass.py` | Audio fingerprint via `fpcalc`; queries AcoustID; interactive candidate review |
 
@@ -71,6 +72,12 @@ also used by `organizer.py`. Records `meta_before` (existing tags as JSON) and `
 replacement), path construction, duplicate detection via `find_done_duplicate()`, and file
 moves. Routes songs to standard, `Collections/`, or `Duplicates/` output paths. Imports
 `resolve()` from `tagger.py`. Reads `tagged` rows; writes `done` rows and sets `final_path`.
+
+**`pipeline/multiprobe_pass.py`** — Multi-probe Shazam pass (`--multiprobe`, issue #32).
+Re-attempts identification on `no_match` songs by probing at four time positions (15%,
+35%, 55%, 75% of duration). For each probe, exports a 15-second WAV slice via pydub and
+calls `shazam.recognize(bytes)`. Stops at first match. Fully automated — no interactive
+review. Sets `id_source='shazam-multiprobe'` on match. Skips too-short files.
 
 **`pipeline/filename_pass.py`** — Metadata search pass (`--metadata-search`, issue #3).
 Reads existing ID3 tags (`TIT2`, `TPE1`) from each `no_match` file first; falls back to the
@@ -142,6 +149,7 @@ sruthi/
         │                                                │
         ├─── no Shazam match, no pattern ──────────► no_match
         │         │                                      │
+        │         ├─ --multiprobe hit ──────────────► identified (id_source='shazam-multiprobe')
         │         ├─ --metadata-search accepted ────► identified (id_source='metadata-search')
         │         ├─ --acoustid accepted ───────────► identified (id_source='acoustid')
         │         ├─ --review manual entry ─────────► identified (id_source=null, override_used=1)
@@ -170,7 +178,7 @@ sruthi/
 | `pending` → `no_match` | Shazam returns no match and no collection pattern found |
 | `pending` → `no_match` (short file) | File duration < 8 seconds |
 | `pending` → `error` | Unhandled exception in Stage 1 |
-| `no_match` → `identified` | User accepts in `--review`, `--metadata-search`, or `--acoustid` |
+| `no_match` → `identified` | User accepts in `--review`, `--metadata-search`, or `--acoustid`; or `--multiprobe` finds a hit |
 | `identified` → `tagged` | Stage 3 writes ID3 tags successfully |
 | `identified` → `error` | Tag write fails in Stage 3 |
 | `tagged` → `done` | Stage 4 moves file to `Music/` |
@@ -296,6 +304,7 @@ runs/2026-03-21_14-32-00/
 | `python3 main.py --stats` | Print DB summary — no files touched |
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs (stages 3+4, no source needed) |
+| `python3 main.py --multiprobe` | Multi-probe pass: re-probe all no_match songs at 4 time positions via Shazam, automated |
 | `python3 main.py --metadata-search` | Metadata search pass: ID3 tags + filename → iTunes, interactive |
 | `python3 main.py --retry-no-match Input/` | Reset all no_match → pending and re-run Stage 1 |
 | `python3 main.py --acoustid` | AcoustID pass: audio fingerprint → AcoustID, interactive |

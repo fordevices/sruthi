@@ -5,6 +5,29 @@ Label bugs `bug`, feature requests `enhancement`.
 
 ---
 
+## v1.3.0 *(in development)*
+
+### New features
+
+**Multi-probe Shazam pass** (`--multiprobe`, issue #32)
+Re-attempts Shazam identification on `no_match` songs by probing at four time
+positions within each file (15%, 35%, 55%, 75% of duration). For each probe,
+a 15-second WAV slice is extracted via pydub and passed to `shazam.recognize(bytes)`.
+The pass stops at the first hit and writes `id_source='shazam-multiprobe'`.
+
+**Why it works:** ShazamIO's default probe sends a single window starting at the
+song's midpoint. Older Tamil and Hindi film music often has 30–60 second orchestral
+intros — the chorus (the indexed section) falls outside that window. The phone
+Shazam app recognises these tracks because it listens to whatever the user plays,
+which is typically the chorus. Multi-probe replicates that coverage automatically.
+
+Run `--move` after `--multiprobe` to tag and file newly identified songs.
+
+### Issues closed
+\#32 (multi-probe Shazam pass)
+
+---
+
 ## v1.2.0 *(in development)*
 
 ### New features
