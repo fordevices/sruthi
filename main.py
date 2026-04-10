@@ -81,62 +81,114 @@ def cmd_stats():
     """Print a summary of music.db — status breakdown, language breakdown, top albums."""
     conn = get_connection()
     try:
-        print("Status breakdown:")
-        for row in conn.execute(
-            "SELECT status, COUNT(*) n FROM songs GROUP BY status ORDER BY n DESC"
-        ):
-            print(f"  {row[0]:<14} {row[1]}")
+        # Languages ordered by total count
+        languages = [r[0] for r in conn.execute(
+            "SELECT language FROM songs GROUP BY language ORDER BY COUNT(*) DESC"
+        ).fetchall()]
 
-        print()
-        print("Language breakdown:")
+        # DB counts per (status, language)
+        db_grid = {}
         for row in conn.execute(
-            "SELECT language, COUNT(*) n FROM songs GROUP BY language ORDER BY n DESC"
+            "SELECT status, language, COUNT(*) n FROM songs GROUP BY status, language"
         ):
-            print(f"  {row[0]:<14} {row[1]}")
+            db_grid[(row[0], row[1])] = row[2]
 
-        print()
-        print("Top albums (by song count):")
-        for row in conn.execute(
-            """SELECT COALESCE(NULLIF(final_album,''), NULLIF(shazam_album,''), 'Unknown Album') AS album,
-                      COUNT(*) AS n
-               FROM songs GROUP BY album ORDER BY n DESC LIMIT 5"""
-        ):
-            print(f"  {row[0][:45]:<47} {row[1]}")
+        # Disk counts per language for Music/ (done songs — one clean folder per language)
+        def music_disk(language: str) -> int:
+            p = Path(config.OUTPUT_DIR) / language
+            return sum(1 for _ in p.rglob("*.mp3")) if p.exists() else 0
 
-        # Disk reconciliation
+        # Disk counts per language for Input/ (all remaining files — no_match + error mixed)
+        def input_disk(language: str) -> int:
+            p = Path(config.INPUT_DIR) / language
+            return sum(1 for _ in p.rglob("*.mp3")) if p.exists() else 0
+
+        col_w = max(len(l) for l in languages) + 2
+
+        # ── Grid: DB counts ─────────────────────────────────────────────────
+        print("Library overview")
         print()
-        print("Disk reconciliation (Music/):")
-        done_rows = conn.execute(
+
+        header = f"  {'Status':<10}  {'Folder':<10}"
+        for lang in languages:
+            header += f"  {lang:>{col_w}}"
+        header += f"  {'Total':>{col_w}}"
+        divider = "  " + "─" * (len(header) - 2)
+        print(header)
+        print(divider)
+
+        statuses_order = ["done", "no_match", "error"]
+        status_folder  = {"done": "Music/", "no_match": "Input/", "error": "Input/"}
+
+        for status in statuses_order:
+            db_total = 0
+            cells = []
+            for lang in languages:
+                n = db_grid.get((status, lang), 0)
+                db_total += n
+                cells.append(f"{n:>{col_w}}")
+            line = f"  {status:<10}  {status_folder.get(status, '?'):<10}"
+            line += "  " + "  ".join(cells)
+            line += f"  {db_total:>{col_w}}"
+            print(line)
+
+        # Totals row (DB)
+        print(divider)
+        db_totals = {l: sum(db_grid.get((s, l), 0) for s in statuses_order) for l in languages}
+        total_row = f"  {'DB total':<10}  {'':10}"
+        grand_db = 0
+        for lang in languages:
+            total_row += f"  {db_totals[lang]:>{col_w}}"
+            grand_db += db_totals[lang]
+        total_row += f"  {grand_db:>{col_w}}"
+        print(total_row)
+
+        # ── Disk counts ─────────────────────────────────────────────────────
+        print()
+        print(f"  {'Disk (Music/)':<22}", end="")
+        music_totals = {}
+        grand_music = 0
+        for lang in languages:
+            n = music_disk(lang)
+            music_totals[lang] = n
+            grand_music += n
+            print(f"  {n:>{col_w}}", end="")
+        print(f"  {grand_music:>{col_w}}")
+
+        print(f"  {'Disk (Input/)':<22}", end="")
+        input_totals = {}
+        grand_input = 0
+        for lang in languages:
+            n = input_disk(lang)
+            input_totals[lang] = n
+            grand_input += n
+            print(f"  {n:>{col_w}}", end="")
+        print(f"  {grand_input:>{col_w}}")
+
+        # ── Reconciliation ──────────────────────────────────────────────────
+        print()
+        db_done = db_grid.get(("done", languages[0]), 0)
+        db_done = conn.execute("SELECT COUNT(*) FROM songs WHERE status='done'").fetchone()[0]
+        done_paths = conn.execute(
             "SELECT final_path FROM songs WHERE status='done' AND final_path IS NOT NULL AND final_path != ''"
         ).fetchall()
-        db_done   = conn.execute("SELECT COUNT(*) FROM songs WHERE status='done'").fetchone()[0]
-        on_disk   = sum(1 for (fp,) in done_rows if Path(fp).exists())
-        deleted   = len(done_rows) - on_disk
-        no_path   = db_done - len(done_rows)
-        actual    = sum(1 for _ in Path(config.OUTPUT_DIR).rglob("*.mp3")) if Path(config.OUTPUT_DIR).exists() else 0
-        duplicates_on_disk = sum(
-            1 for f in Path(config.OUTPUT_DIR).rglob("*.mp3")
-            if "Duplicates" in f.parts
+        db_on_disk = sum(1 for (fp,) in done_paths if Path(fp).exists())
+        deleted    = len(done_paths) - db_on_disk
+        dups_on_disk = sum(
+            1 for f in Path(config.OUTPUT_DIR).rglob("*.mp3") if "Duplicates" in f.parts
         ) if Path(config.OUTPUT_DIR).exists() else 0
-        print(f"  DB done (total):         {db_done}")
-        print(f"  Files in Music/ (actual):{actual:>5}  ← ground truth")
-        print(f"  Accounted for (on disk): {on_disk:>5}  ✓")
-        print(f"  Removed after filing:    {deleted:>5}  (duplicates deleted / manual cleanup)")
-        if no_path:
-            print(f"  No final_path recorded:  {no_path:>5}  (pre-path-tracking era)")
-        print(f"  Duplicates still on disk:{duplicates_on_disk:>5}")
-        if on_disk == actual:
-            print(f"  ✓ DB and disk are in sync")
-        else:
-            unaccounted = actual - on_disk
-            print(f"  ⚠ {abs(unaccounted)} file(s) on disk not matched to done records")
+
+        sync = (db_on_disk == grand_music)
+        print(f"  Music/:  {grand_music} files on disk  +  {deleted} removed after filing  =  {db_done} done in DB  {'✓' if sync else '⚠'}")
+        if dups_on_disk:
+            print(f"           {dups_on_disk} duplicates still in Music/Duplicates/ — review and delete when ready")
 
         no_match_count = conn.execute(
             "SELECT COUNT(*) FROM songs WHERE status='no_match'"
         ).fetchone()[0]
         if no_match_count:
             print()
-            print(f"  {no_match_count} file(s) still need review — run: python3 main.py --review")
+            print(f"  {no_match_count} files still unidentified — run: python3 main.py --acrcloud")
     finally:
         conn.close()
 
