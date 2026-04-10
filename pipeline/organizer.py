@@ -160,6 +160,12 @@ def organize_file(song: dict, dry_run: bool = False) -> bool:
         update_song(song_id, status="done", final_path=target)
         return True
 
+    # Source is gone but file already arrived at target — an earlier run moved it
+    # and the DB was not updated (e.g. crash mid-run, or re-identification after move).
+    if not os.path.exists(source) and os.path.exists(target):
+        update_song(song_id, status="done", final_path=target)
+        return True
+
     if dry_run:
         rel = os.path.relpath(target)
         print(f"[{song_id}] would move → {rel}")
