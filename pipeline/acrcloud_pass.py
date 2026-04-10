@@ -231,7 +231,7 @@ def run_acrcloud_pass(limit: int = 900) -> None:
                 )
                 identified += 1
             else:
-                update_song(song_id, status="no_match", last_attempt_at=now)
+                update_song(song_id, status="no_match", id_source="acrcloud", last_attempt_at=now)
                 print(f"{YELLOW}[{song_id}] ✗ no match    ({i}/{total}) {lang} | {name}{RESET}")
                 no_match += 1
 

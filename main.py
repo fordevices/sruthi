@@ -183,12 +183,21 @@ def cmd_stats():
         if dups_on_disk:
             print(f"           {dups_on_disk} duplicates still in Music/Duplicates/ — review and delete when ready")
 
+        # ── Backlog ─────────────────────────────────────────────────────────
         no_match_count = conn.execute(
             "SELECT COUNT(*) FROM songs WHERE status='no_match'"
         ).fetchone()[0]
         if no_match_count:
+            # no_match by id_source of prior attempts (none = never hit anything)
+            already_tried_acr = conn.execute(
+                "SELECT COUNT(*) FROM songs WHERE status='no_match' AND id_source='acrcloud'"
+            ).fetchone()[0]
+            never_tried_acr = no_match_count - already_tried_acr
+
             print()
-            print(f"  {no_match_count} files still unidentified — run: python3 main.py --acrcloud")
+            print(f"  Backlog — {no_match_count} unidentified songs remaining:")
+            print(f"    {never_tried_acr:>5}  not yet tried with ACRCloud   → python3 main.py --acrcloud")
+            print(f"    {already_tried_acr:>5}  tried ACRCloud, still no match → python3 main.py --metadata-search  (or --review)")
     finally:
         conn.close()
 
