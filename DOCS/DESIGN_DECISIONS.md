@@ -132,6 +132,57 @@ can judge the result in context.
 
 ---
 
+## ACRCloud pass for pre-2000 Indian film music (2026-04-10, issue #33)
+
+### Why ACRCloud covers what Shazam misses
+
+ACRCloud has formal licensing agreements with **Saregama (formerly HMV India)**,
+which holds the largest archive of pre-2000 Tamil and Hindi film music. These
+tracks were catalogued and ingested into ACRCloud's Recorded Music database as
+part of Saregama's digital licensing programme. They are absent from Shazam's
+database, which skews toward post-2000 digital releases.
+
+Practical implication: songs from 1960s–1990s Tamil and Hindi films that return
+`no_match` from Shazam have a meaningful probability of being in ACRCloud's
+Saregama-sourced catalog.
+
+### Implementation
+
+Single probe per song (to conserve the 1,000/day free-tier quota):
+- Start position: `max(10s, duration × 35%)` — skips most intros
+- Fingerprint window: 12 seconds
+- No interactive review — fully automated, same as `--multiprobe`
+- `id_source='acrcloud'` on match
+- Cover art not available in ACRCloud free-tier responses
+
+### Rate limit and quota strategy
+
+ACRCloud free tier: **1,000 queries/day**, resetting at **midnight UTC (7pm US Eastern)**.
+
+With two runs per US calendar day:
+| Run | When (EST) | Songs processed |
+|---|---|---|
+| Run A | Morning/afternoon | up to 900 |
+| Run B | After 7pm EST (midnight UTC resets quota) | up to 900 |
+| **Total** | **Per US day** | **~1,800** |
+
+At 1,800/day, the full 5,500+ no_match pile can be covered in ~3 days.
+Use `--limit N` to control how many songs to process per run (default 900).
+
+### Comparison with Shazam multiprobe
+
+| | `--multiprobe` | `--acrcloud` |
+|---|---|---|
+| Database | Shazam (~200M tracks) | ACRCloud Recorded Music (Saregama catalog) |
+| What it recovers | Correct songs probed at the wrong window | Songs absent from Shazam's DB entirely |
+| Cost | Free, unlimited | Free, 1,000/day |
+| Speed | ~2s/song | ~1s/song |
+| Automation | Full | Full |
+
+Run `--multiprobe` first (no quota limit), then `--acrcloud` on the remaining pile.
+
+---
+
 ## Multi-probe Shazam strategy (2026-04-09, issue #32)
 
 ### Why the default probe misses

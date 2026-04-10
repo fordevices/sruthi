@@ -25,6 +25,8 @@ stop at any point and re-run without reprocessing files already done.
 | `python3 main.py Input/ --stage 1` | Identify only (Shazam fingerprinting) | First step on a new batch |
 | `python3 main.py --review` | Review unmatched files interactively | After Stage 1 finds `no_match` files |
 | `python3 main.py --multiprobe` | Re-probe no_match songs at 4 time positions via Shazam | Best first step for large no_match piles; fully automated |
+| `python3 main.py --acrcloud` | ACRCloud fingerprint pass (Saregama/HMV India catalog) | Pre-2000 Tamil/Hindi coverage; 1,000/day free; run after --multiprobe |
+| `python3 main.py --acrcloud --limit 500` | ACRCloud pass, cap at 500 songs | Use to split across quota resets (midnight UTC = 7pm EST) |
 | `python3 main.py --metadata-search` | Search iTunes using ID3 tags + cleaned filename | Second pass for `no_match` files; no API key needed |
 | `python3 main.py --retry-no-match Input/` | Re-run Shazam on all no_match songs | Worth trying after network issues or after time has passed |
 | `python3 main.py --acoustid` | AcoustID audio fingerprint fallback | Requires `fpcalc` binary and AcoustID API key |
@@ -588,6 +590,8 @@ hyphens — are preserved exactly.
 | `python3 main.py --metadata-search --all` | Same but runs on every song regardless of status |
 | `python3 main.py --metadata-search --folder PATH` | Limit metadata search to songs whose path contains PATH |
 | `python3 main.py --multiprobe` | Multi-probe Shazam pass: re-probe no_match songs at 4 time positions, automated |
+| `python3 main.py --acrcloud` | ACRCloud pass: fingerprint no_match songs via ACRCloud Recorded Music (Saregama catalog) |
+| `python3 main.py --acrcloud --limit N` | ACRCloud pass, cap at N songs per run (default 900; quota resets midnight UTC / 7pm EST) |
 | `python3 main.py --retry-no-match Input/` | Re-run Shazam on all no_match songs |
 | `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |

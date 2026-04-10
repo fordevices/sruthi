@@ -27,3 +27,10 @@ ACOUSTID_API_KEY = os.getenv("ACOUSTID_API_KEY", "")
 # Sarvam AI API key — register free at https://sarvam.ai
 # Required only for the --transliterate pass
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY", "")
+
+# ACRCloud credentials — register free at https://console.acrcloud.com
+# Required only for the --acrcloud pass (select "Recorded Music" project type)
+ACRCLOUD_HOST         = os.getenv("ACRCLOUD_HOST", "")
+ACRCLOUD_ACCESS_KEY   = os.getenv("ACRCLOUD_ACCESS_KEY", "")
+ACRCLOUD_ACCESS_SECRET = os.getenv("ACRCLOUD_ACCESS_SECRET", "")
+ACRCLOUD_SLEEP_SEC    = 1.0   # seconds between ACRCloud calls (no documented rate limit beyond daily quota)

@@ -23,8 +23,26 @@ which is typically the chorus. Multi-probe replicates that coverage automaticall
 
 Run `--move` after `--multiprobe` to tag and file newly identified songs.
 
+### New features (continued)
+
+**ACRCloud fingerprint pass** (`--acrcloud`, issue #33)
+Second fingerprint database targeting pre-2000 Tamil and Hindi film music.
+ACRCloud has formal licensing deals with Saregama (HMV India), whose catalog
+covers the exact gap Shazam misses. Single probe per song at 35% of duration.
+Free tier: 1,000 queries/day (resets midnight UTC = 7pm US Eastern). Use
+`--limit N` to manage quota across runs; default is 900. Fully automated.
+
+Recommended sequence after a batch run:
+```
+python3 main.py --multiprobe       # unlimited, recovers wrong-window Shazam misses
+python3 main.py --acrcloud         # 900/run, hits Saregama catalog Shazam can't reach
+python3 main.py --move             # file everything identified
+```
+
+Setup: `pip install pyacrcloud` + three env vars from https://console.acrcloud.com
+
 ### Issues closed
-\#32 (multi-probe Shazam pass)
+\#32 (multi-probe Shazam pass), #33 (ACRCloud pass)
 
 ---
 

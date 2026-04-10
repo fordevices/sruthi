@@ -2,6 +2,7 @@ shazamio
 mutagen
 requests
 pyacoustid
+pyacrcloud
 # Optional — required for GUI only (streamlit run gui.py)
 streamlit
 anthropic

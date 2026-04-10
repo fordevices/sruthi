@@ -159,6 +159,8 @@ def main():
                         help="Re-run Shazam on all no_match songs (resets them to pending, then runs Stage 1)")
     parser.add_argument("--multiprobe", action="store_true",
                         help="Multi-probe pass: re-attempt Shazam on no_match songs at 4 time positions (issue #32)")
+    parser.add_argument("--acrcloud", action="store_true",
+                        help="ACRCloud fingerprint pass: identify no_match songs via ACRCloud (strong pre-2000 Indian coverage, issue #33)")
 
     args = parser.parse_args()
 
@@ -193,6 +195,11 @@ def main():
     if args.multiprobe:
         from pipeline.multiprobe_pass import run_multiprobe_pass
         run_multiprobe_pass()
+        return
+
+    if args.acrcloud:
+        from pipeline.acrcloud_pass import run_acrcloud_pass
+        run_acrcloud_pass(limit=args.limit or 900)
         return
 
     if args.retry_no_match:

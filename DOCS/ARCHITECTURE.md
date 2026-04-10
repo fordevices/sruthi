@@ -27,6 +27,7 @@ already in the database:
 | Pass | Command | Module | What it does |
 |---|---|---|---|
 | Multi-probe | `--multiprobe` | `pipeline/multiprobe_pass.py` | Re-probes no_match songs at 4 time positions (15/35/55/75% of duration); automated, no review step |
+| ACRCloud | `--acrcloud` | `pipeline/acrcloud_pass.py` | Fingerprints via ACRCloud (Saregama/HMV India catalog); strong pre-2000 Indian coverage; 1,000/day free quota; automated |
 | Metadata search | `--metadata-search` | `pipeline/filename_pass.py` | Reads ID3 tags + cleaned filename; searches iTunes; interactive candidate review |
 | AcoustID | `--acoustid` | `pipeline/acoustid_pass.py` | Audio fingerprint via `fpcalc`; queries AcoustID; interactive candidate review |
 
@@ -72,6 +73,14 @@ also used by `organizer.py`. Records `meta_before` (existing tags as JSON) and `
 replacement), path construction, duplicate detection via `find_done_duplicate()`, and file
 moves. Routes songs to standard, `Collections/`, or `Duplicates/` output paths. Imports
 `resolve()` from `tagger.py`. Reads `tagged` rows; writes `done` rows and sets `final_path`.
+
+**`pipeline/acrcloud_pass.py`** — ACRCloud fingerprint pass (`--acrcloud`, issue #33).
+Identifies `no_match` songs using ACRCloud's Recorded Music database, which includes
+the Saregama (HMV India) catalog — the largest archive of pre-2000 Tamil and Hindi film
+music. Single probe per song at 35% of duration (quota-efficient). Free tier: 1,000
+queries/day (resets midnight UTC). Use `--limit N` to cap per-run usage (default 900).
+Sets `id_source='acrcloud'`. Requires `ACRCLOUD_HOST`, `ACRCLOUD_ACCESS_KEY`,
+`ACRCLOUD_ACCESS_SECRET` env vars — free credentials at https://console.acrcloud.com.
 
 **`pipeline/multiprobe_pass.py`** — Multi-probe Shazam pass (`--multiprobe`, issue #32).
 Re-attempts identification on `no_match` songs by probing at four time positions (15%,
@@ -150,6 +159,7 @@ sruthi/
         ├─── no Shazam match, no pattern ──────────► no_match
         │         │                                      │
         │         ├─ --multiprobe hit ──────────────► identified (id_source='shazam-multiprobe')
+        │         ├─ --acrcloud hit ────────────────► identified (id_source='acrcloud')
         │         ├─ --metadata-search accepted ────► identified (id_source='metadata-search')
         │         ├─ --acoustid accepted ───────────► identified (id_source='acoustid')
         │         ├─ --review manual entry ─────────► identified (id_source=null, override_used=1)
@@ -305,6 +315,8 @@ runs/2026-03-21_14-32-00/
 | `python3 main.py --check` | Verify DB tables exist — nothing else |
 | `python3 main.py --move` | Tag and move all identified songs (stages 3+4, no source needed) |
 | `python3 main.py --multiprobe` | Multi-probe pass: re-probe all no_match songs at 4 time positions via Shazam, automated |
+| `python3 main.py --acrcloud` | ACRCloud pass: fingerprint no_match songs (Saregama catalog), automated, 1,000/day quota |
+| `python3 main.py --acrcloud --limit 500` | ACRCloud pass, process only 500 songs (quota management) |
 | `python3 main.py --metadata-search` | Metadata search pass: ID3 tags + filename → iTunes, interactive |
 | `python3 main.py --retry-no-match Input/` | Reset all no_match → pending and re-run Stage 1 |
 | `python3 main.py --acoustid` | AcoustID pass: audio fingerprint → AcoustID, interactive |
