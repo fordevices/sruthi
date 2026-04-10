@@ -143,6 +143,16 @@ def organize_file(song: dict, dry_run: bool = False) -> bool:
             rel = os.path.relpath(target)
             print(f"[{song_id}] duplicate of {original['song_id']} → would move to {rel}")
             return True
+        # Source gone — a concurrent or prior run already moved it.
+        # (Can happen when two --move processes run simultaneously, or when
+        # find_done_duplicate() finds a song that was just moved by a race partner.)
+        if not os.path.exists(source):
+            existing = song.get("final_path")
+            if existing and os.path.exists(existing):
+                update_song(song_id, status="done", final_path=existing)
+            else:
+                update_song(song_id, status="done", final_path=os.path.abspath(target) if os.path.exists(target) else existing or "")
+            return True
         try:
             os.makedirs(os.path.dirname(target), exist_ok=True)
             shutil.move(source, target)
