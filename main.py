@@ -16,7 +16,9 @@ Issues:
 
 import argparse
 import sqlite3
+from pathlib import Path
 
+from pipeline import config
 from pipeline.db import get_connection
 
 
@@ -100,6 +102,34 @@ def cmd_stats():
                FROM songs GROUP BY album ORDER BY n DESC LIMIT 5"""
         ):
             print(f"  {row[0][:45]:<47} {row[1]}")
+
+        # Disk reconciliation
+        print()
+        print("Disk reconciliation (Music/):")
+        done_rows = conn.execute(
+            "SELECT final_path FROM songs WHERE status='done' AND final_path IS NOT NULL AND final_path != ''"
+        ).fetchall()
+        db_done   = conn.execute("SELECT COUNT(*) FROM songs WHERE status='done'").fetchone()[0]
+        on_disk   = sum(1 for (fp,) in done_rows if Path(fp).exists())
+        deleted   = len(done_rows) - on_disk
+        no_path   = db_done - len(done_rows)
+        actual    = sum(1 for _ in Path(config.OUTPUT_DIR).rglob("*.mp3")) if Path(config.OUTPUT_DIR).exists() else 0
+        duplicates_on_disk = sum(
+            1 for f in Path(config.OUTPUT_DIR).rglob("*.mp3")
+            if "Duplicates" in f.parts
+        ) if Path(config.OUTPUT_DIR).exists() else 0
+        print(f"  DB done (total):         {db_done}")
+        print(f"  Files in Music/ (actual):{actual:>5}  ← ground truth")
+        print(f"  Accounted for (on disk): {on_disk:>5}  ✓")
+        print(f"  Removed after filing:    {deleted:>5}  (duplicates deleted / manual cleanup)")
+        if no_path:
+            print(f"  No final_path recorded:  {no_path:>5}  (pre-path-tracking era)")
+        print(f"  Duplicates still on disk:{duplicates_on_disk:>5}")
+        if on_disk == actual:
+            print(f"  ✓ DB and disk are in sync")
+        else:
+            unaccounted = actual - on_disk
+            print(f"  ⚠ {abs(unaccounted)} file(s) on disk not matched to done records")
 
         no_match_count = conn.execute(
             "SELECT COUNT(*) FROM songs WHERE status='no_match'"
