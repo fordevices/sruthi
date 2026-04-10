@@ -96,9 +96,9 @@ def _make_recognizer():
     })
 
 
-def _probe_start(duration_sec: float) -> float:
-    """Return the probe start position in seconds."""
-    return max(PROBE_MIN_START_SEC, duration_sec * PROBE_FRACTION)
+def _probe_start(duration_sec: float) -> int:
+    """Return the probe start position in whole seconds (native ext requires int)."""
+    return int(max(PROBE_MIN_START_SEC, duration_sec * PROBE_FRACTION))
 
 
 def _parse_acrcloud_response(raw: str) -> dict | None:
@@ -200,7 +200,10 @@ def run_acrcloud_pass(limit: int = 900) -> None:
         start_sec = _probe_start(duration)
 
         try:
-            raw = recognizer.recognize_by_file(file_path, start_sec, REC_LENGTH_SEC)
+            # recognize_by_file chokes on paths with spaces (native C ext issue);
+            # reading bytes ourselves and using filebuffer is equivalent and reliable.
+            file_bytes = Path(file_path).read_bytes()
+            raw = recognizer.recognize_by_filebuffer(file_bytes, start_sec, REC_LENGTH_SEC)
             result = _parse_acrcloud_response(raw)
             now = datetime.now(timezone.utc).isoformat()
 
