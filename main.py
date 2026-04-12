@@ -252,6 +252,8 @@ def main():
                         help="Multi-probe pass: re-attempt Shazam on no_match songs at 4 time positions (issue #32)")
     parser.add_argument("--acrcloud", action="store_true",
                         help="ACRCloud fingerprint pass: identify no_match songs via ACRCloud (strong pre-2000 Indian coverage, issue #33)")
+    parser.add_argument("--language", type=str, default=None,
+                        help="Restrict --acrcloud (or other passes) to a single language folder (e.g. Tamil, Hindi)")
 
     args = parser.parse_args()
 
@@ -290,7 +292,7 @@ def main():
 
     if args.acrcloud:
         from pipeline.acrcloud_pass import run_acrcloud_pass
-        run_acrcloud_pass(limit=args.limit or 900)
+        run_acrcloud_pass(limit=args.limit or 900, language=args.language)
         return
 
     if args.retry_no_match:

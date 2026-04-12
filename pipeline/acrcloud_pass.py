@@ -147,13 +147,14 @@ class QuotaExceededError(Exception):
     pass
 
 
-def run_acrcloud_pass(limit: int = 900) -> None:
+def run_acrcloud_pass(limit: int = 900, language: str | None = None) -> None:
     """
     Run the ACRCloud fingerprint pass on no_match songs.
 
-    limit: max songs to process this run. Default 900 to stay safely under the
-           1,000/day free-tier quota. Run twice per US day (before and after
-           7pm EST / midnight UTC) to process ~1,800 songs per calendar day.
+    limit:    max songs to process this run. Default 900 to stay safely under
+              the 1,000/day free-tier quota.
+    language: if given, restrict to songs whose language field matches exactly
+              (e.g. "Tamil", "Hindi"). Case-sensitive.
     """
     _check_credentials()
 
@@ -161,6 +162,7 @@ def run_acrcloud_pass(limit: int = 900) -> None:
     eligible = [
         s for s in songs
         if not (s.get("error_msg") or "").startswith("too short")
+        and (language is None or s.get("language") == language)
     ]
 
     if not eligible:
@@ -171,7 +173,8 @@ def run_acrcloud_pass(limit: int = 900) -> None:
     total = len(to_process)
     skipped_limit = len(eligible) - total
 
-    print(f"{BOLD}ACRCloud pass:{RESET} {total} songs (limit={limit}"
+    lang_label = f" [{language}]" if language else ""
+    print(f"{BOLD}ACRCloud pass{lang_label}:{RESET} {total} songs (limit={limit}"
           + (f", {skipped_limit} deferred to next run)" if skipped_limit else ")")
     )
     print(_DIVIDER)
