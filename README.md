@@ -1,152 +1,204 @@
-# 🎵 Sruthi
+# Sruthi
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> Open-source MP3 library tool that identifies songs by audio fingerprint, repairs and
-> enriches ID3 metadata from ShazamIO and iTunes, then organises files
-> into a clean `Language/Year/Album/` folder tree. Built for large multilingual collections
-> — Tamil, Hindi, English, and beyond. Core pipeline runs with no API keys.
-> Optional features (transliteration, NL query GUI) use Sarvam AI and Claude API.
+> Identifies MP3s by audio fingerprint, repairs their ID3 tags, and organises
+> them into a clean `Language/Year/Album/` folder tree.
+> Built for large multilingual collections — Tamil, Hindi, English, and beyond.
 
 Works on macOS, Linux, and Windows.
 
 ---
 
-## From a pile of files to a clean library
+## What Sruthi does
 
-If you have a large MP3 collection — Tamil classics, old Bollywood tracks, English songs — where the filenames are garbled (`track01.mp3`, `sattam_naanbaneyennathuuyir.mp3`), the ID3 tags are wrong or empty, and standard tools like beets or MusicBrainz Picard give poor results on Indian music, Sruthi is built for that problem.
+Most music tools assume well-tagged files. Indian music collections rarely have
+that luxury — garbled filenames, empty tags, wrong years, and albums that
+MusicBrainz Picard has never heard of. Sruthi works the other way: it listens to
+the audio, figures out what the song is, and fixes everything from there.
 
-It identifies songs by audio fingerprint via ShazamIO, fills in title, artist, album, and year, then moves each file to the right place. For anything Shazam misses, it searches iTunes using existing tags or the cleaned filename. What cannot be identified automatically goes to a manual review queue. Here is how it works.
+It uses three identification engines in sequence:
 
-**1. Sort by language, drop them in.**
-Create language folders inside `Input/` and copy your files there. Filenames don't matter at all — that's the whole point.
+**Shazam (ShazamIO)**
+The first and fastest pass. Sends a short audio fingerprint to Shazam's database
+— no API key, no account, no cost. Identifies mainstream Tamil, Hindi, and English
+music at 80–90% for most collections. Fills in title, artist, album, and year.
+
+**ACRCloud**
+The second pass, and the key one for Indian music. ACRCloud has formal catalog
+licensing with Saregama (formerly HMV India), which holds the largest archive of
+pre-2000 Indian film music. These tracks are simply absent from Shazam's database.
+ACRCloud's free tier covers 1,000 queries per day; paid tiers remove that cap.
+This is the step that turns a 20% match rate on older Tamil and Hindi songs into
+something workable.
+
+**iTunes metadata search**
+The third pass. For anything neither fingerprinter recognises, Sruthi reads the
+file's existing ID3 tags — title, artist — and searches the iTunes catalogue. If
+the tags are empty it falls back to a cleaned version of the filename. You review
+the top 3 candidates and pick the right one. No account or API key required.
+
+**Organising and moving**
+Once a song is identified, Sruthi writes its ID3 tags with Mutagen and moves the
+file to:
 ```
-Input/Tamil/    Input/Hindi/    Input/English/    Input/Other/
+Music/<Language>/<Year>/<Album>/<Title> - <Artist>.mp3
 ```
+Duplicates (same audio hash, different file) go to `Music/Duplicates/` rather than
+overwriting. Everything is tracked in a local SQLite database (`music.db`) so any
+run can be stopped and resumed safely.
 
-**2. Run it. Shazam identifies most files automatically.**
+**Metrics**
 ```bash
-python3 main.py Input/
+python3 main.py --stats
 ```
-Sruthi sends a short audio fingerprint of each file to Shazam's database. No API key needed. For mainstream Tamil, Hindi, and English music expect 80–90% of files to be matched instantly — title, artist, album, year all filled in. Each matched file gets its ID3 tags written and is moved to `Music/<Language>/<Year>/<Album>/` in one pass.
-
-**3. Some files won't match. That's normal.**
-Recordings not in Shazam's database, older tracks, or live versions get saved as `no_match` and held for the next steps. Run `python3 main.py --stats` to see how many there are.
-
-**4. Try the metadata search pass — no sign-up needed.**
-Sruthi reads each file's existing ID3 tags (title, artist) first, falls back to the cleaned filename if tags are empty, and searches iTunes with the best signal available:
-```bash
-python3 main.py --metadata-search
-```
-For each file you see up to 3 candidates and pick the right one. No account or API key required. This resolves a large chunk of what Shazam missed.
-
-**5. Optionally, try the AcoustID pass — deeper fingerprinting, free API key.**
-AcoustID uses a different audio fingerprint algorithm that catches many songs Shazam misses. It requires a free API key from [acoustid.org](https://acoustid.org) (under 2 minutes to register) and the `fpcalc` binary:
-```bash
-export ACOUSTID_API_KEY=your_key_here
-python3 main.py --acoustid
-```
-You can skip this step entirely if you'd rather not register — go straight to manual review instead.
-
-**6. For everything left, type the metadata yourself.**
-```bash
-python3 main.py --review
-```
-The tool plays each file and lets you type `Title | Artist | Album | Year`. Skip any file you want to come back to later.
-
-**7. Move everything that's now identified.**
-After any of the steps above identify new files, run:
-```bash
-python3 main.py --move
-```
-This writes the ID3 tags and moves all newly identified files into `Music/` — the same organised folder structure as the original run.
-
-**8. Optional — go back and correct already-identified files.**
-Once the main run is done you may spot files that were identified correctly by Shazam but have a wrong year, different album version, or a better match available. Run the metadata search against everything — not just `no_match` files — and correct as you go:
-```bash
-python3 main.py --metadata-search --all
-# optionally limit to one language folder:
-python3 main.py --metadata-search --all --folder Tamil
-```
-After making corrections, run `--move` again to rewrite the tags and relocate any files whose metadata changed:
-```bash
-python3 main.py --move
-```
-Both steps are entirely optional — they're for tidying up after the main work is done.
-
-**9. Optional — transliterate artist names to native script.**
-Tamil and Hindi artist names returned by Shazam are always in Roman script (e.g.
-`Ilaiyaraaja`, `Lata Mangeshkar`). This pass converts the `Artist` ID3 tag to native
-script (Tamil or Devanagari) using Sarvam AI. Requires a free Sarvam API key from
-[sarvam.ai](https://sarvam.ai). Each unique artist name is translated once and cached —
-a name appearing in 200 songs costs one API call.
-```bash
-export SARVAM_API_KEY=your_key_here
-python3 main.py --transliterate
-```
-
-**10. Optional — query your library in plain English.**
-A lightweight local web UI lets you ask questions like "show me all Tamil songs from 1981"
-or "find everything flagged for review" and see the results as a table with file paths.
-Read-only — nothing is written or moved from the GUI. Requires a Claude API key.
-```bash
-export ANTHROPIC_API_KEY=your_key_here
-streamlit run gui.py
-```
-Streamlit prints a local URL — open it in your browser (default `http://localhost:8501`).
-Use the built-in report menu or type any question in plain English. No SQL knowledge needed.
-
-When you're done, every file you dropped into `Input/` has either been organised into `Music/` with full tags, or is still sitting in `Input/` clearly marked in the database as needing attention.
+Prints a language-by-status grid showing how many songs are done, still unmatched,
+or errored — both in the database and on disk. Also shows the backlog split: how
+many songs have never been tried with ACRCloud versus how many have been tried and
+still didn't match.
 
 ---
 
-## How it works
+## Walkthrough for a new user
 
-Each MP3 passes through four stages:
-
-```
-Input/Tamil/mystery_track.mp3
-        │
-        ▼
-┌──────────────────────────────────────────────────┐
-│  Stage 1 — ShazamIO audio fingerprint + identify │
-│  Stage 2 — Manual review queue (no_match files)  │
-│  Stage 3 — Mutagen writes ID3 tags into file     │
-│  Stage 4 — File renamed and moved to folder      │
-└──────────────────────────────────────────────────┘
-        │
-        ▼
-Music/Tamil/2001/Minnale/Vaseegara.mp3
-```
-
-Every file is tracked in a local SQLite database (`music.db`). The pipeline is fully
-resume-safe — stop it at any point, re-run the same command, and only unprocessed
-files are touched. Safe to run on collections of tens of thousands of files.
-
----
-
-## Quick start
+### 1. Install
 
 ```bash
-# 1. Clone and install
 git clone https://github.com/fordevices/sruthi.git
 cd sruthi
 python3 -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-python3 main.py --check
+python3 main.py --check   # verify the database initialised correctly
 ```
 
+### 2. Sort your MP3s by language and drop them in
+
+Create language folders inside `Input/` and copy your files there. Filenames do
+not matter — Sruthi identifies by listening to the audio, not by reading the name.
+
 ```
-# 2. Sort your files by language and drop them in
-Input/Tamil/   Input/Hindi/   Input/English/   Input/Other/
+Input/
+  Tamil/
+  Hindi/
+  English/
+  Other/       ← anything else
 ```
+
+If you have a mixed folder with no language labelling, put it in `Input/Other/`.
+You can always move files between language folders and re-run.
+
+### 3. Run the Shazam pass
 
 ```bash
-# 3. Run
 python3 main.py Input/
 ```
 
-For full installation instructions including Windows, see [DOCS/USER_GUIDE.md](DOCS/USER_GUIDE.md).
+This fingerprints every file and queries Shazam's database. For mainstream music
+expect most files to be identified on the first run. Each matched file gets its
+ID3 tags written and is moved to `Music/` immediately. When it finishes, check
+where you stand:
+
+```bash
+python3 main.py --stats
+```
+
+You will see a table — done, no_match, error — broken down by language. The
+no_match files are what Shazam could not identify. That is normal. Keep going.
+
+### 4. Run the ACRCloud pass — required for Indian music
+
+This is the most important step for Tamil and Hindi collections. The free ACRCloud
+tier gives 1,000 queries per day, which is enough to work through a large backlog
+over a few days. The paid tier removes the daily cap entirely.
+
+**Get your credentials (free tier):**
+1. Sign up at [console.acrcloud.com](https://console.acrcloud.com)
+2. Create a new project — select **Recorded Music** as the project type
+3. Copy your Host, Access Key, and Access Secret from the project dashboard
+
+**Set them in your environment** (or add to a `.env` file in the project root):
+
+```bash
+export ACRCLOUD_HOST=identify-us-west-2.acrcloud.com   # use the host from your dashboard
+export ACRCLOUD_ACCESS_KEY=your_access_key
+export ACRCLOUD_ACCESS_SECRET=your_access_secret
+```
+
+**Run it — Tamil first, then Hindi:**
+
+```bash
+# Process all remaining Tamil no_match songs
+python3 main.py --acrcloud --language Tamil
+
+# Then Hindi — use --limit to stay within your daily quota
+python3 main.py --acrcloud --language Hindi --limit 366
+```
+
+The free tier resets at midnight UTC (around 8pm US Eastern / 5:30am India).
+Run it once before reset and once after to cover ~2,000 songs per calendar day.
+
+After each ACRCloud run, move the newly identified files into `Music/`:
+
+```bash
+python3 main.py --move
+```
+
+Repeat until the Tamil and Hindi backlogs are exhausted.
+
+### 5. Run the metadata search pass
+
+For anything neither fingerprinter recognised, Sruthi searches iTunes using the
+file's existing ID3 tags or cleaned filename. You review candidates interactively.
+
+```bash
+python3 main.py --metadata-search
+```
+
+Each file shows up to three iTunes matches. Press `1`, `2`, or `3` to accept a
+match, `s` to skip, or `m` to type the metadata manually. When done:
+
+```bash
+python3 main.py --move
+```
+
+### 6. Review anything left manually
+
+For files that no automated pass could identify:
+
+```bash
+python3 main.py --review
+```
+
+The tool shows you the filename and lets you type `Title | Artist | Album | Year`.
+Press Enter to save, `s` to skip, `q` to quit. Run `--move` afterwards.
+
+### 7. Optional — query your library in plain English
+
+A local web UI lets you ask questions like "show me all Tamil songs from 1981" or
+"find everything by Ilaiyaraaja" and see the results as a searchable table.
+Read-only — nothing is moved or modified from the GUI.
+
+Requires a Claude API key from [console.anthropic.com](https://console.anthropic.com).
+
+```bash
+export ANTHROPIC_API_KEY=your_key_here
+streamlit run gui.py
+```
+
+Open the URL Streamlit prints (default `http://localhost:8501`). Type any question
+in plain English — no SQL needed.
+
+---
+
+## After you're done
+
+Every file you dropped into `Input/` has either been moved to `Music/` with full
+ID3 tags, or is still in `Input/` and marked in the database as needing attention.
+Run `--stats` at any time to see the full picture.
+
+```bash
+python3 main.py --stats
+```
 
 ---
 
@@ -154,23 +206,10 @@ For full installation instructions including Windows, see [DOCS/USER_GUIDE.md](D
 
 | Document | What it covers |
 |---|---|
-| [User Guide](DOCS/USER_GUIDE.md) | Install on macOS / Linux / Windows, full CLI reference, running the Sruthi MP3 Pipeline, manual review, match rate expectations |
-| [Architecture](DOCS/ARCHITECTURE.md) | Sruthi MP3 Pipeline stages, modules, file structure, status flow, run logging |
-| [Design Decisions](DOCS/DESIGN_DECISIONS.md) | Why ShazamIO was chosen, API comparison table, trade-offs, fallback plan |
-| [Database Reference](DOCS/DATABASE.md) | Full schema, song ID format, persistence, interruption safety |
-| [Music Files Primer](DOCS/MUSIC_FILES_PRIMER.md) | What MP3s are, how ID3 tags work, what audio fingerprinting does, how Shazam works |
-| [Run Statistics](DOCS/RUN_STATISTICS.md) | Results from the 5,550-file batch run — match rates by language, errors, observations |
+| [User Guide](DOCS/USER_GUIDE.md) | Full CLI reference, all flags, install on macOS / Linux / Windows |
+| [Architecture](DOCS/ARCHITECTURE.md) | Pipeline stages, module layout, status flow, run logging |
+| [Design Decisions](DOCS/DESIGN_DECISIONS.md) | Why these tools were chosen, API comparison, trade-offs |
+| [Database Reference](DOCS/DATABASE.md) | Full schema, song ID format, interruption safety |
 | [Batch Run History](DOCS/BATCH_RUN_HISTORY.md) | Record of every full batch run with summary stats |
-| [Releases](DOCS/RELEASES.md) | Version history — what shipped in each release, issues fixed |
-| [System Testing](DOCS/SYSTEM_TESTING.md) | End-to-end test cases covering the full pipeline |
-| [Regression Checklist](DOCS/REGRESSION_CHECKLIST.md) | Manual regression checklist to run before each release |
-| [Contributing](CONTRIBUTING.md) | How to raise bugs and features, PR workflow, issue templates |
-| [Claude CLI Workflow](CLAUDE_CLI_WORKFLOW.md) | How to use Claude CLI to implement issues on this repo |
-
----
-
-## Results
-
-Tested on a 5,550-file library (Tamil, Hindi, English): **68% automated match rate**, 3,768 files identified and moved, 1,700 no-match held for review, 4 errors. Run time: 5h 59m.
-
-Full statistics: [DOCS/RUN_STATISTICS.md](DOCS/RUN_STATISTICS.md) · Release notes: [DOCS/RELEASES.md](DOCS/RELEASES.md)
+| [Releases](DOCS/RELEASES.md) | Version history |
+| [Contributing](CONTRIBUTING.md) | Bug reports, feature requests, PR workflow |
