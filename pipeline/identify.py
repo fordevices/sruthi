@@ -148,8 +148,8 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
                 (file_hash,)
             ).fetchone()
             if row:
-                if row["status"] == "error":
-                    # Error files are retried — reset to pending and reuse existing song_id
+                if row["status"] in ("error", "pending"):
+                    # Error and pending files are retried — reuse existing song_id
                     song_id = row["song_id"]
                     update_song(song_id, status="pending", error_msg=None, file_path=file_path)
                 elif row["file_path"] != file_path and row["status"] != "done":
