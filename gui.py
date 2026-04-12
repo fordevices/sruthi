@@ -305,8 +305,8 @@ with st.expander("ℹ️  About Sruthi", expanded=False):
     st.markdown("""
 **Sruthi** was built for a specific problem: a large collection of Tamil, Hindi, and English
 MP3s from the pre-streaming era — ripped from CDs, filed in folders named by guesswork,
-with garbled filenames and wrong or missing ID3 tags. Standard tools (beets, MusicBrainz
-Picard, AcoustID) have poor coverage of Indian film music pre-2000, especially Tamil.
+with garbled filenames and wrong or missing ID3 tags. Standard tools like beets and
+MusicBrainz Picard have poor coverage of Indian film music pre-2000, especially Tamil.
 
 The Sruthi MP3 Pipeline behind this page uses ShazamIO to identify songs by audio fingerprint.
 Shazam's database has excellent Indian music coverage because millions of Indian users have

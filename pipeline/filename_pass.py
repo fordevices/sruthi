@@ -2,7 +2,7 @@
 Sruthi — metadata search pass (--metadata-search)
 Copyright (c) 2026 Sruthi Contributors (https://github.com/fordevices/sruthi)
 
-Third identification pass for songs that Shazam and AcoustID both failed on.
+Third identification pass for songs that Shazam and ACRCloud both failed on.
 Builds the best available text query from existing ID3 tags (TIT2 + TPE1 preferred
 over cleaned filename), searches iTunes, and presents up to 3 candidates for manual
 selection. No API key required.
