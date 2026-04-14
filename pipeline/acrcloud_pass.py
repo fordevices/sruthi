@@ -162,6 +162,7 @@ def run_acrcloud_pass(limit: int = 900, language: str | None = None) -> None:
     eligible = [
         s for s in songs
         if not (s.get("error_msg") or "").startswith("too short")
+        and s.get("id_source") != "acrcloud"
         and (language is None or s.get("language") == language)
     ]
 
