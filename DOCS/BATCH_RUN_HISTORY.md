@@ -5,6 +5,231 @@ Update this after each run with the summary.json stats and any observations.
 
 ---
 
+## Run 8 — 2026-04-15 (ACRCloud Hindi day 4 — final)
+
+| Field | Value |
+|---|---|
+| Date | 2026-04-15 |
+| Passes run | `--acrcloud --language Hindi --limit 900`, `--move` |
+| Stages | 3 (tag), 4 (move) |
+| DB zeroed before run | No |
+
+### ACRCloud Pass — Hindi (day 4, final)
+
+| Metric | Count |
+|---|---|
+| Songs submitted | 614 |
+| Identified | 392 |
+| No match | 222 |
+| Errors | 0 |
+| Hit rate | **63.8%** |
+| id_source | `acrcloud` |
+| API calls used | 614 (of 1,000/day free quota) |
+| Hindi ACRCloud backlog | **exhausted** |
+
+### Move — ACRCloud Hindi results
+
+| Metric | Count |
+|---|---|
+| Tagged | 392 |
+| Moved | 392 |
+| Errors | 0 |
+
+### End-of-session DB state
+
+| Status | Count |
+|---|---|
+| done | 9,234 |
+| no_match | 1,808 |
+| error | 7 |
+
+### Backlog breakdown
+
+| Bucket | Count |
+|---|---|
+| Not yet tried with ACRCloud | ~12 |
+| Tried ACRCloud, still no_match | ~1,796 |
+| **Total unidentified** | **1,808** |
+
+### Observations
+
+- Hit rate rebounded to 63.8% on the final batch — the queue likely contained a richer
+  slice of the Saregama catalog (Lata Mangeshkar, Hemant Kumar tracks identified).
+- Hindi ACRCloud backlog is now fully exhausted. Only ~12 songs remain untried
+  (likely too-short or corrupt files).
+- 1,796 no_match songs have been tried by ACRCloud and remain unidentified —
+  these are the candidates for `--metadata-search`.
+- Hindi ACRCloud totals across all 4 days: ~614+900+900+100 = 2,514 submitted,
+  ~392+359+223+40 = 1,014 identified (~40% aggregate hit rate).
+- New `--mark-removed` command available (v1.3.0): delete unwanted files from Input/
+  then run `python3 main.py --mark-removed` to retire them from the DB before
+  running `--metadata-search`.
+
+---
+
+## Run 7 — 2026-04-14 (ACRCloud Hindi day 3)
+
+| Field | Value |
+|---|---|
+| Date | 2026-04-14 |
+| Passes run | `--acrcloud --language Hindi --limit 900`, `--move` |
+| Stages | 3 (tag), 4 (move) |
+| DB zeroed before run | No |
+
+### ACRCloud Pass — Hindi (day 3)
+
+| Metric | Count |
+|---|---|
+| Songs submitted | 900 |
+| Identified | 359 |
+| No match | 541 |
+| Errors | 0 |
+| Hit rate | **39.9%** |
+| id_source | `acrcloud` |
+| API calls used | 900 (of 1,000/day free quota) |
+| Hindi songs deferred | ~614 |
+
+### Move — ACRCloud Hindi results
+
+| Metric | Count |
+|---|---|
+| Tagged | 359 |
+| Moved | 359 |
+| Errors | 0 |
+
+### End-of-session DB state
+
+| Status | Count |
+|---|---|
+| done | 8,842 |
+| no_match | 2,200 |
+| error | 7 |
+
+### Backlog breakdown
+
+| Bucket | Count |
+|---|---|
+| Not yet tried with ACRCloud (Hindi) | ~614 |
+| Tried ACRCloud, still no_match | ~1,574 |
+| **Total unidentified** | **2,200** |
+
+### Observations
+
+- Hit rate rebounded to 39.9% (vs 24.8% on day 2) — may have been luck of the draw
+  in the queue ordering, or the 900-song window happened to hit a richer portion.
+- ~614 Hindi songs still untried; one more day at 900/day will exhaust the Hindi backlog.
+- After Hindi ACRCloud is done, ~1,574 songs have been tried and remain no_match —
+  candidates for `--metadata-search`.
+
+---
+
+## Run 6 — 2026-04-13 (ACRCloud Hindi day 2 + move backlog)
+
+| Field | Value |
+|---|---|
+| Date | 2026-04-13 |
+| Passes run | `--move` (backlog from 2026-04-11), `--acrcloud --language Hindi --limit 900`, `--move` |
+| Stages | 3 (tag), 4 (move) |
+| DB zeroed before run | No |
+
+### Move — backlog from 2026-04-11 (660 songs)
+
+Songs identified in the 2026-04-11 ACRCloud session (620 Tamil + 40 Hindi) that had not yet been moved.
+
+| Metric | Count |
+|---|---|
+| Tagged | 660 |
+| Moved | 659 |
+| Errors | 1 (max-008133 — path resolved to None) |
+
+### ACRCloud Pass — Hindi (day 2)
+
+| Metric | Count |
+|---|---|
+| Songs submitted | 900 |
+| Identified | 223 |
+| No match | 677 |
+| Errors | 0 |
+| Hit rate | **24.8%** |
+| id_source | `acrcloud` |
+| API calls used | 900 (of 1,000/day free quota) |
+| Hindi songs deferred | ~1,514 |
+
+### Move — ACRCloud Hindi results
+
+| Metric | Count |
+|---|---|
+| Tagged | 223 |
+| Moved | 223 |
+| Errors | 0 |
+
+### End-of-session DB state
+
+| Status | Count |
+|---|---|
+| done | 8,483 |
+| no_match | 2,559 |
+| error | 7 |
+
+### Backlog breakdown
+
+| Bucket | Count |
+|---|---|
+| Not yet tried with ACRCloud | 1,526 |
+| Tried ACRCloud, still no_match | 1,033 |
+| **Total unidentified** | **2,559** |
+
+### Observations
+
+- Hindi ACRCloud hit rate dropped to 24.8% (vs 40% on day 1 of 100 songs) — likely the
+  harder, older tracks remain in the queue.
+- ~1,514 Hindi songs still untried; at 900/day will take ~2 more days to exhaust.
+- 1,033 songs have been tried by ACRCloud and remain no_match — candidates for
+  `--metadata-search` once the ACRCloud backlog is cleared.
+- Quota resets midnight UTC / 7pm EST.
+
+---
+
+## Run 5 — 2026-04-11 (ACRCloud Tamil + Hindi day 1 + docs rewrite)
+
+| Field | Value |
+|---|---|
+| Date | 2026-04-11 |
+| Passes run | `--acrcloud --language Tamil`, `--acrcloud --language Hindi --limit 100` |
+| Stages | 1 (ACRCloud identify only — move deferred) |
+| DB zeroed before run | No |
+
+### ACRCloud Pass — Tamil
+
+| Metric | Count |
+|---|---|
+| Songs submitted | 900 |
+| Identified | 620 |
+| No match | 280 |
+| Errors | 0 |
+| Hit rate | **69%** |
+| Note | Ran 900 instead of 634 due to quota-wastage bug (re-queried already-tried songs) |
+
+### ACRCloud Pass — Hindi (day 1)
+
+| Metric | Count |
+|---|---|
+| Songs submitted | 100 |
+| Identified | 40 |
+| No match | 60 |
+| Errors | 0 |
+| Hit rate | **40%** |
+
+### Observations
+
+- Tamil ACRCloud essentially exhausted; ~11 songs still untried (9 deferred + ~2 too short).
+- Hindi had ~2,344 untried songs remaining after this session.
+- Quota-wastage bug identified: `--acrcloud` re-queries songs already tried (id_source='acrcloud',
+  status='no_match'), burning daily quota. Fix: add filter in `acrcloud_pass.py`.
+- Move was intentionally deferred to next session (660 songs pending).
+
+---
+
 ## Run 4 — 2026-04-09/10 (ACRCloud + multiprobe session)
 
 | Field | Value |
