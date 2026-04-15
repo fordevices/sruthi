@@ -5,9 +5,25 @@ Label bugs `bug`, feature requests `enhancement`.
 
 ---
 
-## v1.3.0 *(in development)*
+## v1.3.0 — April 2026
 
 ### New features
+
+**`removed` status and `--mark-removed` command** (issue #35)
+When you manually delete files from `Input/` (e.g. unwanted archive.org downloads that
+you don't recognise), those files remain in the database as `no_match` and pollute
+identification passes. Run `--mark-removed` after deleting files to retire them cleanly:
+
+```bash
+python3 main.py --mark-removed
+```
+
+The command scans every `no_match` song, checks whether its file still exists on disk,
+and marks any missing ones as `removed`. The `removed` status is excluded from all
+identification passes automatically. If a removed file reappears in `Input/`, the
+pipeline treats it as `pending` and processes it from scratch.
+
+`--stats` now shows a `removed` row in the status breakdown.
 
 **Multi-probe Shazam pass** (`--multiprobe`, issue #32)
 Re-attempts Shazam identification on `no_match` songs by probing at four time
@@ -46,7 +62,7 @@ Setup: `pip install pyacrcloud` + three env vars from https://console.acrcloud.c
 
 ---
 
-## v1.2.0 *(in development)*
+## v1.2.0 — April 5, 2026
 
 ### New features
 

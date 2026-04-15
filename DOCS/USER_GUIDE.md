@@ -35,6 +35,7 @@ stop at any point and re-run without reprocessing files already done.
 | `python3 main.py --review --flagged` | Review only suspicious-year entries | Catches Shazam data errors (e.g. year 1905 → 1995) |
 | `python3 main.py --review --folder=PATH` | Review only songs in a specific folder | Issue #15 — coming soon |
 | `python3 main.py Input/ --dry-run` | Preview everything — nothing written or moved | Safe to run on a new batch first |
+| `python3 main.py --mark-removed` | Mark `no_match` songs whose file no longer exists on disk as `removed` | Run after manually deleting unwanted files from `Input/` |
 | `python3 main.py --zeroise` | Wipe the database and start fresh | Requires typing `YES` to confirm |
 | `python3 main.py --transliterate` | Transliterate artist ID3 tags to native script for Tamil/Hindi songs | Requires `SARVAM_API_KEY` |
 | `python3 main.py --transliterate --dry-run` | Preview transliterations without writing any tags | Safe first-run check |
@@ -594,6 +595,7 @@ hyphens — are preserved exactly.
 | `python3 main.py --acrcloud --limit N` | ACRCloud pass, cap at N songs per run (default 900; quota resets midnight UTC / 7pm EST) |
 | `python3 main.py --retry-no-match Input/` | Re-run Shazam on all no_match songs |
 | `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
+| `python3 main.py --mark-removed` | Scan `no_match` songs and mark any whose file is missing from disk as `removed` |
 | `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
 | `streamlit run gui.py` | Launch read-only NL query GUI (requires `ANTHROPIC_API_KEY`) |
 

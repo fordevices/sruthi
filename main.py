@@ -19,7 +19,7 @@ import sqlite3
 from pathlib import Path
 
 from pipeline import config
-from pipeline.db import get_connection
+from pipeline.db import get_connection, update_song
 
 
 # ---------------------------------------------------------------------------
@@ -117,8 +117,8 @@ def cmd_stats():
         print(header)
         print(divider)
 
-        statuses_order = ["done", "no_match", "error"]
-        status_folder  = {"done": "Music/", "no_match": "Input/", "error": "Input/"}
+        statuses_order = ["done", "no_match", "error", "removed"]
+        status_folder  = {"done": "Music/", "no_match": "Input/", "error": "Input/", "removed": "(deleted)"}
 
         for status in statuses_order:
             db_total = 0
@@ -252,6 +252,8 @@ def main():
                         help="ACRCloud fingerprint pass: identify no_match songs via ACRCloud (strong pre-2000 Indian coverage, issue #33)")
     parser.add_argument("--language", type=str, default=None,
                         help="Restrict --acrcloud (or other passes) to a single language folder (e.g. Tamil, Hindi)")
+    parser.add_argument("--mark-removed", action="store_true", dest="mark_removed",
+                        help="Scan no_match songs whose file no longer exists on disk and mark them 'removed'")
 
     args = parser.parse_args()
 
@@ -286,6 +288,23 @@ def main():
     if args.acrcloud:
         from pipeline.acrcloud_pass import run_acrcloud_pass
         run_acrcloud_pass(limit=args.limit or 900, language=args.language)
+        return
+
+    if args.mark_removed:
+        conn = get_connection()
+        try:
+            rows = conn.execute(
+                "SELECT song_id, file_path FROM songs WHERE status = 'no_match'"
+            ).fetchall()
+        finally:
+            conn.close()
+        marked = 0
+        for row in rows:
+            if not Path(row["file_path"]).exists():
+                update_song(row["song_id"], status="removed")
+                print(f"[REMOVED] {row['song_id']}  {row['file_path']}")
+                marked += 1
+        print(f"\nMarked {marked} missing file(s) as 'removed'.")
         return
 
     if args.retry_no_match:

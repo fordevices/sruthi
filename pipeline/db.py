@@ -15,6 +15,7 @@ Status lifecycle:
   pending → identified → tagged → done
            ↘ no_match (held for manual review)
            ↘ error    (retried on next run)
+           ↘ removed  (file manually deleted; excluded from all passes)
 
 Docs:
   Full schema and field descriptions — DOCS/DATABASE.md

@@ -29,7 +29,7 @@ This will ask you to type `YES` before deleting anything.
 | `file_path` | TEXT | Original absolute path at time of discovery |
 | `file_hash` | TEXT | MD5 of file bytes — used for dedup and resume |
 | `language` | TEXT | Taken from Input subfolder name (Tamil / Hindi / etc.) |
-| `status` | TEXT | `pending` → `identified` → `no_match` → `tagged` → `done` → `error` |
+| `status` | TEXT | `pending` → `identified` → `no_match` → `tagged` → `done` → `error` → `removed` |
 | `shazam_title` | TEXT | Title returned by ShazamIO |
 | `shazam_artist` | TEXT | Artist returned by ShazamIO |
 | `shazam_album` | TEXT | Album returned by ShazamIO |
@@ -94,8 +94,10 @@ Pattern: `max-XXXXXX` (six zero-padded digits)
                   │
                   ▼
               no_match ──► (manual review) ──► identified ──► tagged ──► done
+                  │           │
+                  │           └──► (user skips) ──► no_match (stays, processed next --review)
                   │
-                  └──► (user skips) ──► no_match (stays, processed next --review)
+                  └──► removed  (file manually deleted; excluded from all passes)
 
   any stage can go to ──► error  (retried on next run)
 ```
@@ -108,6 +110,7 @@ Pattern: `max-XXXXXX` (six zero-padded digits)
 | `tagged` | `tagger.py` | ID3 tags written into file | Stage 4 moves it |
 | `done` | `organizer.py` | File moved to `Music/` structure | Nothing — complete |
 | `error` | any stage | Something failed | Automatically retried on next run |
+| `removed` | `--mark-removed` | File was manually deleted from disk | Nothing — excluded from all passes |
 
 ---
 

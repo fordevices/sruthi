@@ -148,7 +148,7 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
                 (file_hash,)
             ).fetchone()
             if row:
-                if row["status"] in ("error", "pending"):
+                if row["status"] in ("error", "pending", "removed"):
                     # Error and pending files are retried — reuse existing song_id
                     song_id = row["song_id"]
                     update_song(song_id, status="pending", error_msg=None, file_path=file_path)
