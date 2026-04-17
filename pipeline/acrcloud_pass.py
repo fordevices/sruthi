@@ -48,6 +48,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from mutagen.mp3 import MP3, HeaderNotFoundError
+from mutagen.id3 import error as ID3Error
 
 from pipeline import config
 from pipeline.db import get_songs_by_status, update_song
@@ -198,7 +199,7 @@ def run_acrcloud_pass(limit: int = 900, language: str | None = None) -> None:
 
         try:
             duration = MP3(file_path).info.length
-        except HeaderNotFoundError:
+        except (HeaderNotFoundError, ID3Error):
             duration = 60.0
 
         start_sec = _probe_start(duration)

@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from mutagen.mp3 import MP3, HeaderNotFoundError
+from mutagen.id3 import error as ID3Error
 from shazamio import Shazam
 
 from pipeline import config
@@ -178,7 +179,7 @@ async def identify_file(file_path: str, run_id: str, shazam: Shazam) -> dict:
     try:
         audio = MP3(file_path)
         duration = audio.info.length
-    except HeaderNotFoundError:
+    except (HeaderNotFoundError, ID3Error):
         duration = 999  # not a valid MP3 — let Shazam attempt it and fail gracefully
 
     if duration < 8.0:

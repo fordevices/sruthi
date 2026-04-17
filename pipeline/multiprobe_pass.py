@@ -32,6 +32,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from mutagen.mp3 import MP3, HeaderNotFoundError
+from mutagen.id3 import error as ID3Error
 from pydub import AudioSegment
 from shazamio import Shazam
 
@@ -106,7 +107,7 @@ async def _probe_file(file_path: str, shazam: Shazam) -> dict | None:
     """
     try:
         duration = MP3(file_path).info.length
-    except HeaderNotFoundError:
+    except (HeaderNotFoundError, ID3Error):
         duration = 60.0  # not a valid MP3 header — attempt anyway with fallback duration
 
     offsets = _get_probe_offsets(duration)

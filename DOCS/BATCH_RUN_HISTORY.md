@@ -5,6 +5,115 @@ Update this after each run with the summary.json stats and any observations.
 
 ---
 
+## Run 10 — 2026-04-17 (ACRCloud Hindi — new batch day 1)
+
+| Field | Value |
+|---|---|
+| Date | 2026-04-17 |
+| Passes run | `--acrcloud --language Hindi --limit 900`, `--move` |
+| Stages | 3 (tag), 4 (move) |
+| DB zeroed before run | No |
+
+### ACRCloud Pass — Hindi (new batch, day 1)
+
+| Metric | Count |
+|---|---|
+| Songs submitted | ~1,310 |
+| Identified | 1,066 |
+| No match | ~244 |
+| Errors | 1 (corrupt MP3, Header size not synchsafe) |
+| Hit rate | **~81%** |
+| id_source | `acrcloud` |
+| API calls used | ~1,000 (of 1,000/day free quota) |
+| Hindi songs deferred | 195 |
+
+### Move — ACRCloud Hindi results
+
+| Metric | Count |
+|---|---|
+| Tagged | 1,066 |
+| Moved | 1,066 |
+| Errors | 0 |
+
+### End-of-session DB state
+
+| Status | Count |
+|---|---|
+| done | 11,580 |
+| no_match | 2,235 |
+| error | 19 |
+
+### Backlog breakdown
+
+| Bucket | Count |
+|---|---|
+| Not yet tried with ACRCloud | 195 |
+| Tried ACRCloud, still no_match | 2,040 |
+| **Total unidentified** | **2,235** |
+
+### Observations
+
+- Best ACRCloud hit rate yet at ~81% — 1985–1999 Bollywood is well-covered in the Saregama catalog.
+- 195 songs still untried; one more ACRCloud run tomorrow will exhaust the new batch.
+- Bug fixed mid-run: corrupt MP3 (`Header size not synchsafe`) crashed `acrcloud_pass.py` at song 311 — same fix applied as issue #36, also patched `multiprobe_pass.py` proactively.
+- Quota reset needed before continuing (midnight UTC / 7pm EST).
+
+---
+
+## Run 9 — 2026-04-17 (Shazam — new Hindi batch: best-of-90s 1985–1999)
+
+| Field | Value |
+|---|---|
+| Date | 2026-04-17 |
+| Passes run | `python3 main.py Input/Hindi/best-of-90s-1985-1999-bollywood-songs/`, `--move` |
+| Stages | 1 (identify), 3 (tag), 4 (move) |
+| DB zeroed before run | No |
+
+### Source batch
+
+| Detail | Value |
+|---|---|
+| Collection | Best of 90s [1985–1999] — Bollywood Songs |
+| Files extracted | 2,685 MP3s (after removing 29 non-MP3 files: WMA, XML, torrent, PDF, sqlite) |
+| Bit rate | 320 Kbps |
+| Filename format | `Song Title - Singer(s) - Movie.mp3` |
+
+### Stage 1 — Shazam identification
+
+| Metric | Count |
+|---|---|
+| Files total | 2,685 |
+| Identified | ~1,209 (first run) + 103 (second run after crash) = ~1,312 |
+| No match | ~1,493 |
+| Errors | 11 (corrupt MP3s — Header size not synchsafe) |
+| Hit rate | **~48%** |
+
+### Move
+
+| Metric | Count |
+|---|---|
+| Tagged | 1,179 |
+| Moved | 1,280 |
+| Errors | 0 |
+
+### Bugs fixed this session
+
+| Issue | Module | Description |
+|---|---|---|
+| #36 | `identify.py` | Corrupt MP3 (`Header size not synchsafe`) crashed Stage 1 — `ID3Error` not caught |
+| #37 | `USER_GUIDE.md` | Added warning: never run two pipeline passes simultaneously (SQLite locking) |
+| #38 | `tagger.py` | `get_connection` used but not imported — crash on any tagging error |
+
+### Observations
+
+- Shazam hit rate of ~48% — lower than expected for 1985–1999 mainstream Bollywood.
+- Pipeline crashed twice: once in Stage 1 (corrupt MP3, issue #36) and once in Stage 3 (missing import, issue #38). Both fixed and re-run successfully.
+- Async Stage 1 processing means some in-flight songs weren't committed on crash — re-run correctly re-processed those, all identified (100% rate on the small catch-up batch).
+- Clean filename format (`Song Title - Singer(s) - Movie`) means `--metadata-search` should perform very well on remaining no_match songs from this batch.
+- Issue #39 raised: duplicate detection picks first-moved version regardless of year — can cause 2020 re-releases to win over 1994 originals.
+
+---
+
 ## Run 8 — 2026-04-15 (ACRCloud Hindi day 4 — final)
 
 | Field | Value |

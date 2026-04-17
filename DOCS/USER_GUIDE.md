@@ -205,6 +205,8 @@ long as you are consistent.
 
 ## Running the pipeline
 
+> **Warning:** Never run two pipeline commands at the same time. All passes (Stage 1, `--acrcloud`, `--multiprobe`, `--move`, etc.) write to `music.db` concurrently, which will cause SQLite "database is locked" errors and may lose results. Always wait for one pass to finish before starting the next.
+
 ### Full run — process everything
 
 ```

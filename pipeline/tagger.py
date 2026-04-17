@@ -35,7 +35,7 @@ from mutagen.id3 import (
     TXXX,
 )
 
-from pipeline.db import get_songs_by_status, update_song
+from pipeline.db import get_connection, get_songs_by_status, update_song
 from pipeline.runner import GREEN, RED, RESET
 
 
