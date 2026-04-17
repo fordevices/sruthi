@@ -1,8 +1,10 @@
 shazamio
 mutagen
 requests
-pyacoustid
 pyacrcloud
 # Optional — required for GUI only (streamlit run gui.py)
 streamlit
 anthropic
+# Optional — required for review_docs.py only
+# pip install openai
+# pip install google-generativeai
