@@ -29,14 +29,29 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Load .env from project root (same logic as pipeline/config.py)
-_env_file = Path(__file__).parent / ".env"
-if _env_file.exists():
-    for _line in _env_file.read_text().splitlines():
-        _line = _line.strip()
-        if _line and not _line.startswith("#") and "=" in _line:
-            _k, _, _v = _line.partition("=")
-            os.environ.setdefault(_k.strip(), _v.strip())
+# Load .env — search from the script's directory upward, then from cwd upward.
+# This finds a shared .env in a parent project folder (e.g. kirahi/aidev/.env)
+# without requiring a copy in every sub-project.
+def _load_env_file() -> None:
+    """Walk upward from the script directory and load every .env found.
+    setdefault means the innermost (closest) file wins for duplicate keys."""
+    seen: set[Path] = set()
+    p = Path(__file__).parent.resolve()
+    while True:
+        ep = p / ".env"
+        if ep not in seen and ep.exists():
+            seen.add(ep)
+            for line in ep.read_text().splitlines():
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, _, v = line.partition("=")
+                    os.environ.setdefault(k.strip(), v.strip())
+        parent = p.parent
+        if parent == p:
+            break
+        p = parent
+
+_load_env_file()
 
 
 # ---------------------------------------------------------------------------
