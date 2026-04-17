@@ -167,21 +167,38 @@ def cmd_stats():
 
         # ── Reconciliation ──────────────────────────────────────────────────
         print()
-        db_done = db_grid.get(("done", languages[0]), 0)
         db_done = conn.execute("SELECT COUNT(*) FROM songs WHERE status='done'").fetchone()[0]
         done_paths = conn.execute(
             "SELECT final_path FROM songs WHERE status='done' AND final_path IS NOT NULL AND final_path != ''"
         ).fetchall()
+        no_final_path = db_done - len(done_paths)
         db_on_disk = sum(1 for (fp,) in done_paths if Path(fp).exists())
         deleted    = len(done_paths) - db_on_disk
         dups_on_disk = sum(
             1 for f in Path(config.OUTPUT_DIR).rglob("*.mp3") if "Duplicates" in f.parts
         ) if Path(config.OUTPUT_DIR).exists() else 0
+        normal_on_disk = grand_music - dups_on_disk
 
-        sync = (db_on_disk == grand_music)
-        print(f"  Music/:  {grand_music} files on disk  +  {deleted} removed after filing  =  {db_done} done in DB  {'✓' if sync else '⚠'}")
+        # db_on_disk: done songs whose final_path exists on disk
+        # deleted:    done songs whose final_path no longer exists
+        # no_final_path: done songs with no final_path at all
+        # These three must sum to db_done
+        accounted = db_on_disk + deleted + no_final_path
+        sync = (accounted == db_done) and (db_on_disk == grand_music)
+        path_gap = grand_music - db_on_disk  # +ve = extra files on disk not in DB
+
+        print(f"  Reconciliation (done: {db_done})                     {'✓' if sync else '⚠'}")
+        print(f"    {db_on_disk:>6}  tracked in DB + on disk in Music/")
         if dups_on_disk:
-            print(f"           {dups_on_disk} duplicates still in Music/Duplicates/ — review and delete when ready")
+            print(f"    {dups_on_disk:>6}  in Music/Duplicates/ — review and delete when ready")
+        print(f"    {deleted:>6}  removed after filing (in DB, not on disk)")
+        if no_final_path:
+            print(f"    {no_final_path:>6}  done with no final_path (run --move to fix)")
+        print(f"    {'──────'}")
+        print(f"    {accounted:>6}  total  {'✓' if accounted == db_done else f'⚠ DB gap of {db_done - accounted}'}")
+        if path_gap != 0:
+            label = "extra files on disk not tracked in DB" if path_gap > 0 else "DB entries with no matching file"
+            print(f"    {abs(path_gap):>6}  {label}  (Music/ has {grand_music}, DB expects {db_on_disk})")
 
         # ── Backlog ─────────────────────────────────────────────────────────
         no_match_count = conn.execute(
