@@ -58,6 +58,14 @@ It uses Shazam for mainstream music (no account needed) and ACRCloud for older I
 
 ---
 
+## What other AI agents think of this
+
+Claude, GPT-4o, and Gemini were each sent the documentation and key source files independently and asked to review the UX and architecture. No prompts were shared between models.
+
+**→ [Read the multi-model peer review](DOCS/ai/PEER_REVIEW.md)**
+
+---
+
 ## Documentation
 
 | | |

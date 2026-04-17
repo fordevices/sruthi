@@ -197,7 +197,7 @@ def _call_gemini(prompt: str, content: str) -> str:
         return "[SKIP] google-generativeai package not installed — run: pip install google-generativeai"
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-pro")
+        model = genai.GenerativeModel("gemini-2.5-pro")
         resp = model.generate_content(f"{prompt}\n\n{content}")
         return resp.text.strip()
     except Exception as e:
@@ -207,7 +207,7 @@ def _call_gemini(prompt: str, content: str) -> str:
 PROVIDERS = [
     ("Claude (claude-sonnet-4-6)", _call_claude),
     ("GPT-4o",                     _call_openai),
-    ("Gemini 1.5 Pro",             _call_gemini),
+    ("Gemini 2.5 Pro",             _call_gemini),
 ]
 
 
@@ -287,9 +287,15 @@ def main() -> None:
     if args.save:
         out_dir = ROOT / "DOCS" / "ai"
         out_dir.mkdir(parents=True, exist_ok=True)
-        out_path = out_dir / f"review_{timestamp}.md"
-        out_path.write_text("\n".join(save_parts))
-        print(f"\n✓ Saved → {out_path.relative_to(ROOT)}")
+        content_out = "\n".join(save_parts)
+        # Timestamped archive
+        archive_path = out_dir / f"review_{timestamp}.md"
+        archive_path.write_text(content_out)
+        # Canonical file linked from README
+        peer_review_path = out_dir / "PEER_REVIEW.md"
+        peer_review_path.write_text(content_out)
+        print(f"\n✓ Saved → {peer_review_path.relative_to(ROOT)}")
+        print(f"  Archive → {archive_path.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":
