@@ -164,4 +164,4 @@ runs/2026-04-17_18-01-10/
 
 ## Links
 
-[README](../README.md) | [User Guide](USER_GUIDE.md) | [Database Reference](DATABASE.md) | [Design Decisions](DESIGN_DECISIONS.md)
+[README](../../README.md) | [User Guide](../guide/USER_GUIDE.md) | [Database Reference](DATABASE.md) | [Design Decisions](DESIGN_DECISIONS.md)

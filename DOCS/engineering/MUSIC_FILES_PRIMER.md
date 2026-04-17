@@ -139,4 +139,4 @@ takes priority over any Shazam data.
 
 ## Links
 
-[README.md](../README.md) | [User Guide](USER_GUIDE.md) | [Design Decisions](DESIGN_DECISIONS.md)
+[README.md](../../README.md) | [User Guide](../guide/USER_GUIDE.md) | [Design Decisions](DESIGN_DECISIONS.md)

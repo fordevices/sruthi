@@ -401,4 +401,4 @@ will immediately understand.
 
 ## Links
 
-[README.md](../README.md) | [Architecture](ARCHITECTURE.md) | [Database Reference](DATABASE.md)
+[README.md](../../README.md) | [Architecture](ARCHITECTURE.md) | [Database Reference](DATABASE.md)

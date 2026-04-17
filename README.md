@@ -62,9 +62,9 @@ It uses Shazam for mainstream music (no account needed) and ACRCloud for older I
 
 | | |
 |---|---|
-| [User Guide](DOCS/USER_GUIDE.md) | Install, first run, handling unmatched songs, all commands |
-| [Architecture](DOCS/ARCHITECTURE.md) | Pipeline design, modules, status flow |
-| [Database Reference](DOCS/DATABASE.md) | Schema, song IDs, interruption safety |
-| [Design Decisions](DOCS/DESIGN_DECISIONS.md) | Why these tools, trade-offs considered |
-| [Releases](DOCS/RELEASES.md) | Version history |
-| [Batch Run History](DOCS/BATCH_RUN_HISTORY.md) | Real-world run stats from a 14,000-song collection |
+| [User Guide](DOCS/guide/USER_GUIDE.md) | Install, first run, handling unmatched songs, all commands |
+| [Architecture](DOCS/engineering/ARCHITECTURE.md) | Pipeline design, modules, status flow |
+| [Database Reference](DOCS/engineering/DATABASE.md) | Schema, song IDs, interruption safety |
+| [Design Decisions](DOCS/engineering/DESIGN_DECISIONS.md) | Why these tools, trade-offs considered |
+| [Releases](DOCS/guide/RELEASES.md) | Version history |
+| [Batch Run History](DOCS/history/BATCH_RUN_HISTORY.md) | Real-world run stats from a 14,000-song collection |

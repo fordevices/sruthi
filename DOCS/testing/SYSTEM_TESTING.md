@@ -364,4 +364,4 @@ After completing all test cases above, verify:
 
 ## Links
 
-[README.md](../README.md) | [Architecture](ARCHITECTURE.md) | [User Guide](USER_GUIDE.md) | [Database Reference](DATABASE.md)
+[README.md](../../README.md) | [Architecture](../engineering/ARCHITECTURE.md) | [User Guide](../guide/USER_GUIDE.md) | [Database Reference](../engineering/DATABASE.md)

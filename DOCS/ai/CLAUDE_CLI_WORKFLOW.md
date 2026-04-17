@@ -1,8 +1,8 @@
 # Claude CLI — Project Onboarding Prompt
 
 > **This file is for Claude CLI sessions only.**
-> For the human PR workflow, see [CONTRIBUTING.md](CONTRIBUTING.md).
-> For project architecture, see [DOCS/ARCHITECTURE.md](DOCS/ARCHITECTURE.md).
+> For the human PR workflow, see [CONTRIBUTING.md](../engineering/CONTRIBUTING.md).
+> For project architecture, see [ARCHITECTURE.md](../engineering/ARCHITECTURE.md).
 
 > Run this ONCE at the start of any new Claude CLI session before working on an issue.
 > It teaches Claude CLI what the project is, how it works, and what the rules are.
@@ -36,7 +36,7 @@ Key things to extract and state:
 STEP 2a — READ THE ARCHITECTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Read DOCS/ARCHITECTURE.md in full.
+Read ../engineering/ARCHITECTURE.md in full.
 
 Key things to extract and state:
   - The four pipeline stages and which module owns each one
@@ -48,7 +48,7 @@ Key things to extract and state:
 STEP 2b — READ THE DATABASE REFERENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Read DOCS/DATABASE.md in full.
+Read ../engineering/DATABASE.md in full.
 
 Key things to extract and state:
   - The status flow: pending → identified → no_match → tagged → done → error
@@ -60,7 +60,7 @@ Key things to extract and state:
 STEP 2c — SKIM DESIGN DECISIONS (unless issue touches Stage 1)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Read DOCS/DESIGN_DECISIONS.md (skim unless issue touches Stage 1 / identify.py).
+Read ../engineering/DESIGN_DECISIONS.md (skim unless issue touches Stage 1 / identify.py).
 
 Key things to extract and state:
   - Why ShazamIO was chosen (one sentence)
@@ -117,9 +117,9 @@ STEP 5 — CONFIRM YOU ARE READY
 After completing steps 1–4, print this checklist with ✓ or ✗ for each item:
 
   [ ] CONTRIBUTING.md read — rules understood
-  [ ] DOCS/ARCHITECTURE.md read — modules, stages, CLI surface understood
-  [ ] DOCS/DATABASE.md read — schema, status flow, field priority understood
-  [ ] DOCS/DESIGN_DECISIONS.md skimmed — ShazamIO parsing quirks noted
+  [ ] ../engineering/ARCHITECTURE.md read — modules, stages, CLI surface understood
+  [ ] ../engineering/DATABASE.md read — schema, status flow, field priority understood
+  [ ] ../engineering/DESIGN_DECISIONS.md skimmed — ShazamIO parsing quirks noted
   [ ] All 7 pipeline modules read — functions and gotchas noted
   [ ] main.py read — full CLI surface known
   [ ] python3 main.py --check passed — DB is healthy
@@ -152,7 +152,7 @@ These apply for the entire session. You do not need to be reminded of them:
 5. Every session ends with a runnable verification command and its expected output.
    You paste the command. I run it. I paste the result back. Only then is it done.
 
-6. Update README.md and DOCS/USER_GUIDE.md in the same commit if any CLI flag,
+6. Update README.md and ../guide/USER_GUIDE.md in the same commit if any CLI flag,
    config constant, or user-facing behaviour changes.
 
 7. Print the exact git commit message at the end:
@@ -180,7 +180,7 @@ Every session has exactly two prompts:
 
 ```
 Prompt 1 (onboarding):   reads codebase, checks DB, confirms ready
-                         — key sources: DOCS/ARCHITECTURE.md + DOCS/DATABASE.md
+                         — key sources: ../engineering/ARCHITECTURE.md + ../engineering/DATABASE.md
 Prompt 2 (issue):        implements exactly one GitHub issue
 ```
 

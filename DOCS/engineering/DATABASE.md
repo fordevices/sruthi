@@ -202,4 +202,4 @@ for row in conn.execute('SELECT song_id, language, status FROM songs LIMIT 10'):
 
 ## Links
 
-[README.md](../README.md) | [Architecture](ARCHITECTURE.md)
+[README.md](../../README.md) | [Architecture](ARCHITECTURE.md)

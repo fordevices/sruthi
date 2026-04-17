@@ -59,7 +59,7 @@ Who benefits and how.
 
 **What module would this touch?**
 identify.py / review.py / tagger.py / organizer.py / runner.py / main.py / db.py
-— see DOCS/ARCHITECTURE.md for module responsibilities
+— see ARCHITECTURE.md for module responsibilities
 
 **Acceptance criteria**
 A bullet list of specific, testable things that must be true for this to be done.
@@ -84,9 +84,9 @@ to implement a GitHub issue. Read this entire file before starting any session.
 
 Every session starts with Claude CLI reading:
 1. This file (CONTRIBUTING.md)
-2. DOCS/ARCHITECTURE.md  — pipeline stages, modules, status flow, CLI surface
-3. DOCS/DATABASE.md      — full schema, field priority rule, status meanings
-4. (if issue touches identification) DOCS/DESIGN_DECISIONS.md — ShazamIO
+2. ARCHITECTURE.md  — pipeline stages, modules, status flow, CLI surface
+3. DATABASE.md      — full schema, field priority rule, status meanings
+4. (if issue touches identification) DESIGN_DECISIONS.md — ShazamIO
    response structure, API trade-offs, fallback plan
 5. README.md             — quick orientation only, not architecture
 6. The specific module(s) the issue touches
@@ -190,8 +190,8 @@ You are implementing a GitHub issue for the Sruthi project.
 
 Before writing any code, read these files in this order:
   1. CONTRIBUTING.md              — rules and constraints
-  2. DOCS/ARCHITECTURE.md         — pipeline stages, modules, status flow
-  3. DOCS/DATABASE.md             — schema, field priority, status meanings
+  2. ARCHITECTURE.md         — pipeline stages, modules, status flow
+  3. DATABASE.md             — schema, field priority, status meanings
   4. <MODULE_FILE(S)>             — the specific file(s) this issue touches
   5. README.md                    — skip unless issue is docs-only
   6. Run: python3 main.py --check — confirm DB is healthy before starting
@@ -217,7 +217,7 @@ Files you are allowed to modify for this issue:
   <list the specific files — e.g. pipeline/identify.py, main.py, README.md>
 
 Files you must NOT modify:
-  music.db, Music/, Input/, runs/, DOCS/USER_GUIDE.md (unless issue is docs-only)
+  music.db, Music/, Input/, runs/, ../guide/USER_GUIDE.md (unless issue is docs-only)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 IMPLEMENTATION APPROACH
@@ -256,7 +256,7 @@ AFTER IMPLEMENTATION
 
 When the verification passes, Claude CLI must:
   1. Update README.md if any CLI flags, config constants, or behaviour changed
-  2. Update DOCS/USER_GUIDE.md if the change affects how a user operates the tool
+  2. Update ../guide/USER_GUIDE.md if the change affects how a user operates the tool
   3. Print the exact git commit message to use:
        fix: <description> (closes #<number>)
      or
@@ -286,8 +286,8 @@ You are implementing a GitHub issue for the Sruthi project.
 
 Before writing any code, read these files in this order:
   1. CONTRIBUTING.md
-  2. DOCS/ARCHITECTURE.md
-  3. DOCS/DATABASE.md
+  2. ARCHITECTURE.md
+  3. DATABASE.md
   4. pipeline/identify.py
   5. README.md — skip unless needed
 
@@ -361,8 +361,8 @@ You are implementing a GitHub issue for the Sruthi project.
 
 Before writing any code, read these files in this order:
   1. CONTRIBUTING.md
-  2. DOCS/ARCHITECTURE.md
-  3. DOCS/DATABASE.md
+  2. ARCHITECTURE.md
+  3. DATABASE.md
   4. pipeline/config.py
   5. pipeline/identify.py
   6. pipeline/tagger.py
@@ -389,7 +389,7 @@ SCOPE
 
 Files allowed:
   pipeline/config.py, pipeline/identify.py, pipeline/tagger.py,
-  pipeline/organizer.py, README.md, DOCS/USER_GUIDE.md
+  pipeline/organizer.py, README.md, ../guide/USER_GUIDE.md
 
 Files not allowed: music.db, Music/, Input/, runs/, db.py
 
@@ -429,7 +429,7 @@ AFTER IMPLEMENTATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Update README.md: add .flac to SUPPORTED_EXTENSIONS row in config section.
-Update DOCS/USER_GUIDE.md: add .flac to Requirements and What this does sections.
+Update ../guide/USER_GUIDE.md: add .flac to Requirements and What this does sections.
 Print the git commit message to use.
 ```
 
@@ -455,7 +455,7 @@ Print the git commit message to use.
   Use `python3 main.py --review` to handle them manually.
 - Wanting to discuss an idea before writing it up — open a GitHub Discussion,
   not an issue. Issues are for things with clear acceptance criteria.
-- Questions about how to use the tool — read DOCS/USER_GUIDE.md first.
+- Questions about how to use the tool — read ../guide/USER_GUIDE.md first.
 
 ---
 
@@ -477,7 +477,7 @@ These apply to every session, regardless of issue type:
 
 5. **Update docs when behaviour changes.** If a CLI flag changes, README.md
    CLI reference table is updated in the same commit. If a user-facing behaviour
-   changes, DOCS/USER_GUIDE.md is updated in the same commit.
+   changes, ../guide/USER_GUIDE.md is updated in the same commit.
 
 6. **Never touch music.db directly.** All DB changes go through db.py functions.
    Never run raw SQL UPDATE or DELETE against music.db from Claude CLI.
