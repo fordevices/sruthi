@@ -1,351 +1,284 @@
 # Sruthi — User Guide
 
-> **New to this project?** Start with [What it does](../README.md).
-> **Want to understand how it works?** See [Architecture](ARCHITECTURE.md).
-> **Questions about MP3s and fingerprinting?** See [Music Files Primer](MUSIC_FILES_PRIMER.md).
+Sruthi takes a folder full of MP3 files — even ones with garbled names and missing information — and sorts them into a clean, properly labelled music library. It listens to each song, figures out what it is, fills in the correct song name, artist, album, and year, then moves it into a tidy folder structure like `Music/Hindi/1994/Hum Aapke Hain Koun/`.
 
-Sruthi is an open-source command-line tool for identifying, tagging, and organising large
-MP3 collections. It is designed for collections where filenames are garbled or meaningless,
-ID3 tags are wrong or empty, and standard tools (beets, MusicBrainz Picard) give poor
-coverage — particularly for Tamil, Hindi, and other South Asian music.
+It works especially well for Tamil and Hindi music from the 1970s–2000s, which most other tools miss.
 
-Sruthi identifies songs by audio fingerprint via ShazamIO (no API key required), enriches
-metadata from iTunes as a fallback, writes correct ID3 tags using Mutagen,
-then moves each file into a structured folder tree (`Music/<Language>/<Year>/<Album>/`).
-Every file is tracked in a local SQLite database, making the process fully resume-safe —
-stop at any point and re-run without reprocessing files already done.
+> **Useful links:**
+> [Architecture](ARCHITECTURE.md) — how it works under the hood |
+> [Database reference](DATABASE.md) — what gets stored and why |
+> [Music files primer](MUSIC_FILES_PRIMER.md) — what fingerprinting actually does
 
 ---
 
-## Quick command reference
+## Before you start
 
-| Command | What it does | Notes |
+### What you need
+
+| What | Version | How to check |
 |---|---|---|
-| `python3 main.py Input/` | Full pipeline — identify, tag, and move everything | Resumes safely if interrupted |
-| `python3 main.py Input/ --stage 1` | Identify only (Shazam fingerprinting) | First step on a new batch |
-| `python3 main.py --review` | Review unmatched files interactively | After Stage 1 finds `no_match` files |
-| `python3 main.py --multiprobe` | Re-probe no_match songs at 4 time positions via Shazam | Best first step for large no_match piles; fully automated |
-| `python3 main.py --acrcloud` | ACRCloud fingerprint pass (Saregama/HMV India catalog) | Pre-2000 Tamil/Hindi coverage; 1,000/day free; run after --multiprobe |
-| `python3 main.py --acrcloud --limit 500` | ACRCloud pass, cap at 500 songs | Use to split across quota resets (midnight UTC = 7pm EST) |
-| `python3 main.py --metadata-search` | Search iTunes using ID3 tags + cleaned filename | Second pass for `no_match` files; no API key needed |
-| `python3 main.py --retry-no-match Input/` | Re-run Shazam on all no_match songs | Worth trying after network issues or after time has passed |
-| `python3 main.py --acoustid` | AcoustID audio fingerprint fallback | Requires `fpcalc` binary and AcoustID API key |
-| `python3 main.py --move` | Tag and move all identified files | Run after any identification pass |
-| `python3 main.py --stats` | Show DB summary (counts, languages, top albums) | No files touched |
-| `python3 main.py --review --flagged` | Review only suspicious-year entries | Catches Shazam data errors (e.g. year 1905 → 1995) |
-| `python3 main.py --review --folder=PATH` | Review only songs in a specific folder | Issue #15 — coming soon |
-| `python3 main.py Input/ --dry-run` | Preview everything — nothing written or moved | Safe to run on a new batch first |
-| `python3 main.py --mark-removed` | Mark `no_match` songs whose file no longer exists on disk as `removed` | Run after manually deleting unwanted files from `Input/` |
-| `python3 main.py --zeroise` | Wipe the database and start fresh | Requires typing `YES` to confirm |
-| `python3 main.py --transliterate` | Transliterate artist ID3 tags to native script for Tamil/Hindi songs | Requires `SARVAM_API_KEY` |
-| `python3 main.py --transliterate --dry-run` | Preview transliterations without writing any tags | Safe first-run check |
-| `streamlit run gui.py` | Launch read-only NL query GUI in browser | Requires `ANTHROPIC_API_KEY` + streamlit — v1.2.0 |
+| Python | 3.10 or newer | `python3 --version` |
+| Internet connection | Always on | Required for song identification |
+| Disk space | At least as much as your music | The tool moves files, it does not copy them |
 
-For all flags and combinations see [Full CLI reference](#full-cli-reference) below.
+Everything else (the Python libraries) installs automatically in the next step.
 
----
+**Optional extras** — only needed if you want specific features:
 
-## Requirements
-
-| Item | Minimum version | Notes |
-|---|---|---|
-| Python | 3.10+ | Run `python3 --version` to check |
-| pip | any | Comes with Python |
-| shazamio | 0.8+ | Installed via pip |
-| mutagen | any | Installed via pip |
-| requests | any | Installed via pip |
-| pyacoustid | any | Installed via pip — required for `--acoustid` pass only |
-| fpcalc | 1.4+ | System binary (Chromaprint) — required for `--acoustid` pass only |
-| Internet | required | ShazamIO sends audio fingerprints to Shazam's servers |
-| Disk space | ~50 MB | For `music.db` + run logs; `Music/` output size varies |
-
-**Core pipeline:** no API keys, no accounts, no system binaries beyond Python itself.
-
-**Optional features:**
-
-| Feature | Requires |
+| Feature | What you need |
 |---|---|
-| `--transliterate` (artist name transliteration) | Free Sarvam AI API key — register at [sarvam.ai](https://sarvam.ai); set `SARVAM_API_KEY`. Docs: https://docs.sarvam.ai/api-reference-docs/text/transliterate-text |
-| `streamlit run gui.py` (NL query GUI) | Claude API key — set `ANTHROPIC_API_KEY`. Plus `pip install streamlit anthropic` |
+| Artist name transliteration (e.g. `Ilaiyaraaja` → `இளையராஜா`) | Free Sarvam AI API key — register at [sarvam.ai](https://sarvam.ai), then: `export SARVAM_API_KEY=your_key` |
+| Natural language search GUI | Free Anthropic API key — [console.anthropic.com](https://console.anthropic.com), then: `export ANTHROPIC_API_KEY=your_key` |
+| ACRCloud identification (best for pre-2000 Indian music) | Free ACRCloud account — [console.acrcloud.com](https://console.acrcloud.com), then set three keys (see [ACRCloud section](#2-acrcloud-pass--best-for-pre-2000-indian-music)) |
 
 ---
 
-## Installation
+### Installation
 
-### macOS
+**macOS**
 
-1. **Install Python 3.10+** if not already installed.
+```
+brew install python
+git clone https://github.com/fordevices/sruthi.git
+cd sruthi
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python3 main.py --check
+```
 
-   Option A — Homebrew (recommended):
-   ```
-   brew install python
-   ```
-   Option B — Download the installer from python.org.
+**Linux (Ubuntu / Debian)**
 
-2. **Clone the repo:**
-   ```
-   git clone https://github.com/fordevices/sruthi.git
-   cd sruthi
-   ```
+```
+sudo apt update && sudo apt install python3 python3-pip python3-venv
+git clone https://github.com/fordevices/sruthi.git
+cd sruthi
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python3 main.py --check
+```
 
-3. **Create a virtual environment** (recommended — keeps dependencies isolated):
-   ```
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+**Windows**
 
-4. **Install dependencies:**
-   ```
-   pip install -r requirements.txt
-   ```
+Install Python 3.10+ from [python.org](https://python.org) — tick **"Add Python to PATH"** during install. Then open Command Prompt or PowerShell:
 
-5. **Verify:**
-   ```
-   python3 main.py --check
-   ```
-   Expected output:
-   ```
-   Tables in music.db: ['runs', 'songs', 'sqlite_sequence']
-   DB OK
-   ```
+```
+git clone https://github.com/fordevices/sruthi.git
+cd sruthi
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python main.py --check
+```
 
----
+> On Windows, use `python` instead of `python3` throughout this guide.
+> Audio playback during `--review` is not available on Windows — open files in VLC or Windows Media Player instead.
 
-### Linux (Ubuntu / Debian)
-
-1. **Install Python 3.10+:**
-   ```
-   sudo apt update
-   sudo apt install python3 python3-pip python3-venv
-   ```
-
-2. **Clone the repo:**
-   ```
-   git clone https://github.com/fordevices/sruthi.git
-   cd sruthi
-   ```
-
-3. **Create a virtual environment:**
-   ```
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-4. **Install dependencies:**
-   ```
-   pip install -r requirements.txt
-   ```
-
-5. **Verify:**
-   ```
-   python3 main.py --check
-   ```
+If `--check` prints `DB OK`, you are ready to go.
 
 ---
 
-### Windows
-
-> **Note:** The pipeline runs on Windows but the audio playback feature in `--review` mode
-> uses `afplay`/`mpg123`, which are not available on Windows. You can still use all other
-> features — you just cannot play files during review. Workaround: open the file in Windows
-> Media Player or VLC separately while reviewing.
-
-1. **Install Python 3.10+** from python.org.
-   During install: check **"Add Python to PATH"**.
-
-2. **Open Command Prompt or PowerShell, then clone the repo:**
-   ```
-   git clone https://github.com/fordevices/sruthi.git
-   cd sruthi
-   ```
-
-3. **Create a virtual environment:**
-   ```
-   python -m venv venv
-   venv\Scripts\activate
-   ```
-
-4. **Install dependencies:**
-   ```
-   pip install -r requirements.txt
-   ```
-
-5. **Verify:**
-   ```
-   python main.py --check
-   ```
-
-> **Note:** All commands in the rest of this guide use `python3`. On Windows, use `python` instead.
-
----
-
-## First-time setup
+## Your first run
 
 ### Step 1 — Sort your MP3s by language
 
-Before running the pipeline, create language subfolders inside `Input/` and place your MP3s
-there. Nested subfolders are fine — the pipeline walks recursively.
+Create language folders inside `Input/` and put your MP3s in them. Subfolders inside those are fine — Sruthi will find everything.
 
 ```
 Input/
-├── Tamil/        ← Tamil songs (any filename, any subfolder depth)
-├── Hindi/        ← Hindi songs
-├── English/      ← English songs
-└── Other/        ← anything else
+├── Tamil/
+├── Hindi/
+├── English/
+└── Other/        ← use this for anything else (Malayalam, Telugu, etc.)
 ```
 
-You do not need to rename files. The whole point of this tool is that the filenames can be
-completely wrong or meaningless.
+You do not need to rename anything. The filenames can be completely garbled — that is the whole point.
 
-The folder name becomes the **Language** field in the database and in the output path.
-You can use any folder name — Tamil, Hindi, English, Other, Malayalam, Telugu, French — as
-long as you are consistent.
+> **The folder name becomes the language label.** You can call them anything — `Malayalam`, `French`, `Oldies` — but be consistent. Whatever you name the folder is what appears in `Music/` and in the database.
 
 ---
 
-## Running the pipeline
-
-> **Warning:** Never run two pipeline commands at the same time. All passes (Stage 1, `--acrcloud`, `--multiprobe`, `--move`, etc.) write to `music.db` concurrently, which will cause SQLite "database is locked" errors and may lose results. Always wait for one pass to finish before starting the next.
-
-### Full run — process everything
+### Step 2 — Run it
 
 ```
 python3 main.py Input/
 ```
 
-This runs all four stages in sequence:
-
-- **Stage 1** — Fingerprint each file with ShazamIO and look up metadata
-- **Stage 2** — (skipped in batch mode — see Manual Review below)
-- **Stage 3** — Write ID3 tags into each identified MP3
-- **Stage 4** — Rename and move each file to `Music/<Language>/<Year>/<Album>/`
-
-Progress is printed live. Each file gets one line:
+Sruthi will work through every file. You will see one line per song as it goes:
 
 ```
-[max-000012] ✓ identified  (12/47) Tamil | Raja Raja Chozhan — Ilaiyaraaja
-[max-000014] ✗ no match    (14/47) Tamil | Sathileelavathy_MarugoMarugo.mp3
+[max-000012] ✓ identified  (12/500) Hindi | Tujhe Dekha To — Kumar Sanu & Lata Mangeshkar
+[max-000014] ✗ no match    (14/500) Hindi | 0047_track14.mp3
 ```
 
-A timestamped log folder is created automatically:
+A green ✓ means the song was identified and moved to `Music/`. A red ✗ means Sruthi could not figure out what the song is — it will stay in `Input/` for now and you can deal with it separately (see [What to do with unmatched songs](#what-to-do-with-unmatched-songs) below).
 
-```
-runs/2026-03-21_14-32-00/
-    run.log          full output for this run
-    summary.json     machine-readable stats
-```
-
-### Process a single language folder
-
-```
-python3 main.py Input/Tamil/
-```
-
-### Process a single file
-
-```
-python3 main.py Input/Tamil/mystery_track.mp3
-```
-
-### Dry run — see what would happen without moving anything
-
-```
-python3 main.py Input/ --dry-run
-```
-
-All four stages run in preview mode. No files are moved, no tags are written.
-Useful before running on a large new batch.
-
-### Run a specific stage only
-
-```
-python3 main.py Input/ --stage 1    ← identify only
-python3 main.py Input/ --stage 3    ← tag only (identified songs)
-python3 main.py Input/ --stage 4    ← move only (tagged songs)
-```
+**How long does it take?** About 2 seconds per song for the identification step. A collection of 1,000 songs takes roughly 30–35 minutes. You can stop at any time with Ctrl-C and run the same command again later — it will pick up exactly where it left off without re-processing songs already done.
 
 ---
 
-## Resuming an interrupted run
-
-The pipeline is fully resume-safe. You can stop it at any time — Ctrl-C, close the terminal
-window, or let it fail — and re-run the same command.
-
-**How it works:**
-
-- Every file is identified by its MD5 hash when first discovered
-- Files already in the database with `status=done` are skipped instantly
-- Files with `status=error` are retried automatically
-- Files with `status=no_match` wait for manual review (see below)
-
-For a 1000-file collection at 2 seconds per Shazam call, a full Stage 1 run takes roughly
-33 minutes. You can run it overnight, interrupt halfway, and resume the next day. Only
-unprocessed files will be touched.
-
-**To check progress at any time without running anything:**
+### Step 3 — Check the results
 
 ```
 python3 main.py --stats
 ```
 
-Example output:
-
-```
-Status breakdown:
-  done         847
-  no_match      91
-  error          3
-Language breakdown:
-  Tamil        512
-  Hindi        298
-  English      131
-Top albums:
-  Unknown Album    47
-  Payanangal...    12
-  ...
-91 files still need review — run: python3 main.py --review
-```
+This shows a breakdown of how many songs were identified, how many are still unmatched, and how many files are in your `Music/` folder. Nothing is changed when you run `--stats`.
 
 ---
 
-## Manual review
+### What your library looks like after a run
 
-Some files will not be matched by ShazamIO — usually files where the audio fingerprint is not
-in Shazam's database, or files that are too short, noisy, or corrupted. These are saved with
-`status=no_match` and held until you review them.
+Identified songs land in `Music/` like this:
 
-### Review all unmatched files
+```
+Music/
+├── Hindi/
+│   ├── 1994/
+│   │   └── Hum Aapke Hain Koun/
+│   │       ├── Didi Tera Dewar Deewana — Lata Mangeshkar & S.P. Balasubramaniam.mp3
+│   │       └── Pehla Pehla Pyar Hai — Kumar Sanu & Kavita Krishnamurthy.mp3
+│   └── Unknown Year/
+│       └── ...
+├── Tamil/
+│   └── 1987/
+│       └── ...
+└── English/
+    └── ...
+```
+
+If a field is missing, Sruthi falls back gracefully:
+
+| Situation | Where it goes |
+|---|---|
+| Year unknown | `Music/Hindi/Unknown Year/Album/` |
+| Album unknown | `Music/Hindi/1994/Unknown Album/` |
+| Duplicate of a song already in your library | `Music/Hindi/Duplicates/Album/` |
+
+> **Duplicates folder:** If the same song appears twice (e.g. original and a compilation re-release), Sruthi keeps one copy in the normal location and puts the other in `Duplicates/`. Open both in a music player, keep the better quality one, delete the other.
+
+---
+
+## What to do with unmatched songs
+
+After your first run, some songs will still be in `Input/` with no match. Here is what to try, in order:
+
+```
+Not identified by Shazam?
+        │
+        ├─ Try multiprobe  →  python3 main.py --multiprobe
+        │  (free, automatic, takes ~2s/song, gets 10–20% more matches)
+        │
+        ├─ Try ACRCloud   →  python3 main.py --acrcloud
+        │  (free account, 1,000 songs/day, best for pre-2000 Indian music)
+        │
+        ├─ Try metadata search  →  python3 main.py --metadata-search
+        │  (searches iTunes using existing tags or filename, interactive)
+        │
+        └─ Enter manually  →  python3 main.py --review
+           (listen and type the details yourself, one song at a time)
+```
+
+After each pass, run `python3 main.py --move` to move the newly identified songs into `Music/`.
+
+> **One at a time.** Never run two Sruthi commands simultaneously. They all write to the same database file and will conflict with each other. Wait for one to finish before starting the next.
+
+---
+
+### 1. Multiprobe pass — free, no account needed
+
+Shazam sometimes misses a song if the loudest or most recognisable part happens to fall outside the section it sampled. Multiprobe tries four different points in each song instead of one.
+
+```
+python3 main.py --multiprobe
+python3 main.py --move
+```
+
+No setup, no quota. Good first step.
+
+---
+
+### 2. ACRCloud pass — best for pre-2000 Indian music
+
+ACRCloud has a different music database to Shazam — it includes the Saregama/HMV India catalogue, which is the biggest archive of older Tamil and Hindi film music. If you have a lot of 1970s–1990s Bollywood or Tamil classics that Shazam missed, ACRCloud will often get them.
+
+**Free limit:** 1,000 songs per day. Quota resets at midnight UTC (7 pm US Eastern time).
+
+**One-time setup:**
+
+1. Create a free account at [console.acrcloud.com](https://console.acrcloud.com) — choose a "Recorded Music" project
+2. Copy the three credentials from your project dashboard
+3. Set them in your terminal (add to `~/.bashrc` to make permanent):
+
+```
+export ACRCLOUD_HOST=identify-ap-southeast-1.acrcloud.com
+export ACRCLOUD_ACCESS_KEY=your_access_key
+export ACRCLOUD_ACCESS_SECRET=your_access_secret
+```
+
+**Running it:**
+
+```
+python3 main.py --acrcloud
+python3 main.py --move
+```
+
+If you have more than 1,000 unmatched songs, cap the run and do it over multiple days:
+
+```
+python3 main.py --acrcloud --limit 900    ← leaves a 100-song buffer before the daily limit
+```
+
+To run it on one language only:
+
+```
+python3 main.py --acrcloud --language Hindi
+```
+
+ACRCloud remembers which songs it already tried — re-running it will not waste your daily quota on songs it already attempted.
+
+---
+
+### 3. Metadata search — searches iTunes by song name
+
+This pass reads whatever information is already in the file — existing tags or the filename itself — and searches iTunes for a match. It shows you up to three candidates and lets you pick the right one.
+
+```
+python3 main.py --metadata-search
+python3 main.py --move
+```
+
+No account or API key required. Works best when the filename is somewhat meaningful (e.g. `Tujhe Dekha To - Kumar Sanu - DDLJ.mp3`).
+
+For each song you will see something like:
+
+```
+────────────────────────────────────────────
+File     : Input/Hindi/Tujhe Dekha To - Kumar Sanu.mp3
+Search   : 'Tujhe Dekha To'
+── Candidates ──
+  [1]  Tujhe Dekha To — Kumar Sanu & Lata Mangeshkar  |  Dilwale Dulhania Le Jayenge  1995
+  [2]  Tujhe Dekha To — Kumar Sanu  |  Best of 90s  2005
+  [3]  Tujhe Dekha To (Remix) — DJ Suketu  |  Remix Album  2003
+────────────────────────────────────────────
+[1/2/3] Pick  [e] Edit manually  [p] Play  [s] Skip  [q] Quit
+```
+
+Press the number to pick a match, `s` to skip, or `e` to type the details yourself.
+
+---
+
+### 4. Manual review — last resort
+
+For anything that still has not been identified, you can listen to each song and enter the details by hand.
 
 ```
 python3 main.py --review
+python3 main.py --move
 ```
 
-For each file you will see:
-
-```
-────────────────────────────────────────────
-Song ID : max-000042
-File    : Input/Tamil/sattam_naanbaneyennathuuyir.mp3
-Language: Tamil
-Status  : no_match
-── Shazam match ──
-Title   : (none)
-────────────────────────────────────────────
-[p] Play  [s] Skip  [e] Edit metadata  [q] Quit
-```
-
-**Options:**
-
-| Key | Action |
-|---|---|
-| `p` | Play the file in your terminal (macOS/Linux only) |
-| `s` | Skip this file for now, come back later |
-| `e` | Enter metadata manually |
-| `q` | Quit review, resume later |
-
-### Entering metadata manually
-
-Press `e`, then type in this format:
+For each song you will hear it play (macOS/Linux) and see whatever Sruthi knows about it. Press `e` to enter the details:
 
 ```
 Title | Artist | Album | Year
@@ -354,430 +287,190 @@ Title | Artist | Album | Year
 Examples:
 
 ```
+Tujhe Dekha To | Kumar Sanu, Lata Mangeshkar | DDLJ | 1995
 Vaseegara | Bombay Jayashri | Minnale | 2001
-Nadaan Parindey | Mohit Chauhan | Rockstar | 2011
 ```
 
 You can leave fields blank to keep existing values:
 
 ```
-| | | 1995      ← fixes only the year, keeps title/artist/album
+| | | 1995    ← fixes only the year
 ```
 
-### Catch bad years from Shazam's own database
-
-Shazam occasionally has wrong year data (for example, 1905 instead of 1995). Run this after
-every large batch to surface those:
+Other review options:
 
 ```
-python3 main.py --review --flagged
+python3 main.py --review --flagged    ← only shows songs with suspicious years (e.g. year 1905 — likely means 1995)
+python3 main.py --review --limit 20  ← review only the next 20 songs, then stop
+python3 main.py --review --all       ← review every song including ones already identified
 ```
-
-Only shows songs where the year looks implausible (before 1940 or in the future).
-Use the partial override `| | | 1995` to correct just the year.
-
-### Other review modes
-
-```
-python3 main.py --review --all              ← review every song, not just no_match
-python3 main.py --review --limit 20         ← review only the next 20 unmatched files
-python3 main.py --review --folder=Music/Tamil/Collections/  ← review songs in a specific folder (issue #15 — coming soon)
-```
-
-The `--folder` filter scopes the review queue to songs whose stored path starts with the
-given prefix. Useful for correcting metadata on all songs that landed in `Collections/`
-or any other specific output folder. Works in combination with `--all`, `--flagged`,
-and `--limit`.
 
 ---
 
-## Metadata search pass
+## Keeping your library tidy
 
-For files that Shazam failed on, a third pass searches iTunes using the best text
-signals available — existing ID3 tags (title, artist) are read from the file first,
-with the cleaned filename used as a fallback when tags are absent. No API key or
-binary dependency required.
+### After identifying songs — move them into Music/
 
-```
-python3 main.py --metadata-search
-```
-
-For each `no_match` file the pipeline builds a search query and shows up to 3 iTunes
-candidates:
-
-```
-────────────────────────────────────────────
-Song ID  : max-000021
-File     : Input/Hindi/01_o_saathi_re.mp3
-Language : Hindi
-Status   : no_match
-Search   : 'o saathi re'
-── Candidates ──
-  [1]       [iTunes]  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
-  [2]       [iTunes]  O Saathi Re — Lata Mangeshkar  |  Compilation  1985
-  [3]       [iTunes]  O Saathi Re — Kishore Kumar  |  Muqaddar Ka Sikandar  1978
-────────────────────────────────────────────
-[1/2/3] Pick  [e] Edit manually  [p] Play  [s] Skip  [q] Quit
-
-### Running on already-identified files
-
-By default `--metadata-search` only processes `no_match` files. To run it across
-every file in the database — useful for correcting wrong years or album names on
-files that Shazam already identified — add `--all`:
-
-```
-python3 main.py --metadata-search --all
-```
-
-To limit to one language folder:
-
-```
-python3 main.py --metadata-search --all --folder Tamil
-```
-
-After making corrections, run `--move` to rewrite the ID3 tags and relocate any
-files whose metadata changed:
-
-```
-python3 main.py --move
-```
-## AcoustID fallback pass
-
-For songs that Shazam could not identify and that have no collection pattern in their
-filename, you can run a second identification pass using AcoustID.
-
-### Prerequisites
-
-1. **Install the Python library:**
-   ```
-   pip install pyacoustid
-   ```
-   > If you installed dependencies with `pip install -r requirements.txt` before this
-   > feature was added, re-run it to pick up `pyacoustid`.
-
-2. **Install Chromaprint** (the `fpcalc` binary used for audio fingerprinting):
-   ```
-   macOS:   brew install chromaprint
-   Linux:   sudo apt install libchromaprint-tools
-   Windows: download fpcalc from https://acoustid.org/chromaprint
-   ```
-
-3. **Register for a free AcoustID API key** at https://acoustid.org (2 minutes, no payment).
-
-4. **Set the environment variable** (add to `~/.bashrc` to make it permanent):
-   ```
-   export ACOUSTID_API_KEY=your_key_here
-   ```
-
-### Running the pass
-
-```
-python3 main.py --acoustid
-```
-
-This works directly on your existing `no_match` files in the database — no need to
-re-run Stage 1. If you want to test on a small set first:
-
-```
-python3 main.py --zeroise                 # wipe DB
-python3 main.py Input/Tamil/some_folder/  # re-run Stage 1 on a small folder
-python3 main.py --acoustid                # test on that small batch
-```
-
-For each `no_match` file, the pipeline will:
-- Fingerprint the audio using `fpcalc`
-- Query AcoustID and retrieve the best matching recording
-- Show you the proposed match with a confidence percentage
-
-```
-────────────────────────────────────────────
-Song ID  : max-000014
-File     : Input/Tamil/mystery.mp3
-Language : Tamil
-── AcoustID match  (confidence: 94%) ──
-Title    : Vaseegara
-Artist   : Bombay Jayashri
-Album    : Minnale
-Year     : 2001
-────────────────────────────────────────────
-[a] Accept  [e] Edit  [p] Play  [s] Skip  [q] Quit
-```
-
-| Key | Action |
-|---|---|
-| `a` | Accept the proposed match as-is |
-| `e` | Edit individual fields before saving |
-| `p` | Play the file, then return to the prompt |
-| `s` | Skip this file (stays `no_match`) |
-| `q` | Quit, resume later |
-
-After the pass, run `--move` to tag and move the newly identified files:
+Any identification pass (multiprobe, ACRCloud, metadata search, manual review) marks songs as ready to move but does not move them automatically. Run this when you are done identifying:
 
 ```
 python3 main.py --move
 ```
 
----
-
-## Output folder structure
-
-Organised files land in `Music/` using this pattern:
-
-```
-Music/<Language>/<Year>/<Album>/<Title>.mp3
-```
-
-Examples:
-
-```
-Music/Tamil/1987/Rettai Vaal Kuruvi.../Raja Raja Chozhan.mp3
-Music/Hindi/1974/Roti Kapda Aur Makaan/Aaj Ki Raat.mp3
-Music/English/1999/Issues/Evolution.mp3
-```
-
-**Duplicate songs** (same title+artist+language already exists in `Music/`) are automatically
-routed to a `Duplicates/` folder for manual comparison:
-
-```
-Music/Tamil/Duplicates/Minnale/Vaseegara (max-000031).mp3
-```
-
-The original stays in its normal path. Open both files in a player, keep the
-better-quality one, and delete the other.
-
-Missing fields fall back gracefully:
-
-```
-No year  → Music/Tamil/Unknown Year/Minnale/Vaseegara.mp3
-No album → Music/Tamil/2001/Unknown Album/Vaseegara.mp3
-```
-
-**Collection-fix songs** are files that Shazam could not identify but whose filename
-contained a `from <Album>` clue (e.g. `Vaseegara (From Minnale).mp3`). These are
-identified automatically and routed to a `Collections/` folder:
-
-```
-Music/Tamil/Collections/Minnale/Vaseegara.mp3
-Music/Hindi/Collections/Muqaddar Ka Sikandar/O Saathi Re.mp3
-```
-
-If the year is later resolved (via manual review or a future identification pass), the
-file will be re-routed to the standard year-based path.
-
-Characters illegal in filenames (`/ \ : * ? " < > |`) are replaced with `_`.
-All other characters — including Tamil script, Hindi script, parentheses, ampersands, and
-hyphens — are preserved exactly.
+You can run `--move` at any time — it will only touch songs that have been identified but not yet filed.
 
 ---
 
-## Full CLI reference
+### Check library health
 
-| Command | What it does |
-|---|---|
-| `python3 main.py Input/` | Full pipeline run on a folder (all stages) |
-| `python3 main.py Input/ --dry-run` | Preview only — nothing written or moved |
-| `python3 main.py Input/ --stage 1` | Identify only |
-| `python3 main.py Input/ --stage 3` | Tag only (identified songs) |
-| `python3 main.py Input/ --stage 4` | Move only (tagged songs) |
-| `python3 main.py Input/ --review-after` | Run pipeline then drop into review |
-| `python3 main.py --review` | Review all `no_match` files interactively |
-| `python3 main.py --review --flagged` | Review only suspicious-year files |
-| `python3 main.py --review --all` | Review every file including matched ones |
-| `python3 main.py --review --limit N` | Review only next N unmatched files |
-| `python3 main.py --review --folder PATH` | Review only songs whose path contains PATH |
-| `python3 main.py --stats` | Print DB summary — no files touched |
-| `python3 main.py --check` | Verify DB tables exist — nothing else |
-| `python3 main.py --move` | Tag and move all identified songs to `Music/` (stages 3+4, no source needed) |
-| `python3 main.py --move --dry-run` | Preview what `--move` would do without changing anything |
-| `python3 main.py --metadata-search` | Search iTunes for `no_match` files using ID3 tags or filename |
-| `python3 main.py --metadata-search --all` | Same but runs on every song regardless of status |
-| `python3 main.py --metadata-search --folder PATH` | Limit metadata search to songs whose path contains PATH |
-| `python3 main.py --multiprobe` | Multi-probe Shazam pass: re-probe no_match songs at 4 time positions, automated |
-| `python3 main.py --acrcloud` | ACRCloud pass: fingerprint no_match songs via ACRCloud Recorded Music (Saregama catalog) |
-| `python3 main.py --acrcloud --limit N` | ACRCloud pass, cap at N songs per run (default 900; quota resets midnight UTC / 7pm EST) |
-| `python3 main.py --retry-no-match Input/` | Re-run Shazam on all no_match songs |
-| `python3 main.py --acoustid` | AcoustID fallback pass: fingerprint no_match songs and review interactively |
-| `python3 main.py --mark-removed` | Scan `no_match` songs and mark any whose file is missing from disk as `removed` |
-| `python3 main.py --zeroise` | Clear all songs and runs from the database (asks for confirmation) |
-| `streamlit run gui.py` | Launch read-only NL query GUI (requires `ANTHROPIC_API_KEY`) |
+```
+python3 main.py --stats
+```
+
+Shows how many songs are done, unmatched, or in error — broken down by language. Also shows how many files are on disk vs. what the database expects, so you can spot anything that is out of sync.
 
 ---
 
-## Match rate expectations
+### When you delete files from Input/
 
-Based on testing with a real collection:
+If you decide to delete some unmatched songs from `Input/` manually (e.g. you do not want certain tracks), run this afterwards to update the database:
 
-| Music type | Expected match rate | Notes |
-|---|---|---|
-| Tamil film music 1990s–2010s | ~90% | Strong Shazam coverage |
-| Tamil film music 1970s–1980s | ~75% | Good — Ilaiyaraaja era well indexed |
-| Hindi film music (Bollywood) | ~85–90% | Excellent coverage |
-| English mainstream | ~90%+ | Shazam's original strength |
-| Obscure / regional / pre-1970 | ~40–60% | Falls back to manual review |
-| Non-music (noise, speech) | 0% | Expected — use `--review` to tag manually |
+```
+python3 main.py --mark-removed
+```
 
-**Main causes of `no_match`:**
-
-1. Audio fingerprint not present in Shazam's database
-2. File shorter than 8 seconds
-3. Very obscure or locally-released recordings never submitted to Shazam
+This scans for unmatched songs whose files are no longer on disk and marks them as removed. Without this, they stay in the database as "unmatched" even though the file is gone.
 
 ---
 
-## Transliteration pass *(v1.2.0)*
+### Preview before committing
 
-The `--transliterate` pass converts the `Artist` ID3 tag for Tamil and Hindi songs from
-Roman script to native script using Sarvam AI.
-
-**Example:** `Ilaiyaraaja` → `இளையராஜா` (Tamil), `Lata Mangeshkar` → `लता मंगेशकर` (Hindi)
-
-### Prerequisites
-
-1. **Register** for a free account at [sarvam.ai](https://sarvam.ai) to get an API key.
-   Docs: https://docs.sarvam.ai/api-reference-docs/text/transliterate-text
-
-2. **Set the environment variable:**
-   ```
-   export SARVAM_API_KEY=your_key_here
-   ```
-
-### Running the pass
+Not sure what a command will do? Add `--dry-run`:
 
 ```
-python3 main.py --transliterate
+python3 main.py Input/ --dry-run
+python3 main.py --move --dry-run
 ```
 
-Each unique artist name per language is sent to Sarvam once and cached in the
-`artist_transliterations` table in `music.db`. Subsequent runs and re-runs use the
-cache — no repeat API calls.
-
-**Notes:**
-- Only `Artist` tag is affected — filenames and folder names are unchanged
-- English songs are skipped entirely
-- Compound artist strings (e.g. `A.R. Rahman & Lata Mangeshkar`) are split, each name
-  transliterated independently, then reassembled
-- The target script follows the song's language: Tamil songs → Tamil script, Hindi → Devanagari
-- ~5–10% of songs may be mis-classified due to folder-based language detection; this is
-  accepted noise and can be reviewed via the GUI
+Nothing is written, moved, or changed. You just see what would happen.
 
 ---
 
-## GUI — natural language query tool *(v1.2.0)*
+## Optional features
 
-A lightweight local web UI that lets you query `music.db` in plain English.
-Results are shown as a table with file paths. **Read-only — nothing is written or moved.**
+### Artist name transliteration
 
-### Prerequisites
+Converts artist names from Roman script to native script in the song tags:
 
-1. **Claude API key** from [console.anthropic.com](https://console.anthropic.com):
-   ```
-   export ANTHROPIC_API_KEY=your_key_here
-   ```
+`Ilaiyaraaja` → `இளையராஜா` (Tamil)
+`Lata Mangeshkar` → `लता मंगेशकर` (Hindi)
 
-2. **Install extra dependencies** (inside your virtual environment if you're using one):
-   ```
-   pip install streamlit anthropic
-   ```
-
-3. **Verify Streamlit installed correctly:**
-   ```
-   streamlit --version
-   ```
-   If this returns `command not found`, your virtual environment is not activated — run
-   `source venv/bin/activate` (macOS/Linux) or `venv\Scripts\activate` (Windows) first,
-   then retry.
-
-   > **Note:** Streamlit is a separate web framework that opens a local server in your
-   > browser. It is not launched with `python3` — use `streamlit run` instead (see below).
-   > Port 8501 is used by default. If something else is already on that port (e.g. another
-   > Streamlit app), pass `--server.port 8502` to use a different one.
-
-### Running the GUI
+Requires a free Sarvam AI API key (set `SARVAM_API_KEY`). Each unique artist name is only sent once — subsequent runs use a local cache.
 
 ```
-streamlit run gui.py
+python3 main.py --transliterate --dry-run    ← preview first
+python3 main.py --transliterate              ← apply
 ```
 
-Streamlit will print a local URL — open it in your browser (default `http://localhost:8501`).
-On Linux it will not auto-open the browser; copy the URL from the terminal output manually.
+Only affects the Artist tag inside the MP3 file. Filenames and folder names are not changed. English songs are skipped entirely.
 
-To use a different port:
-```
-streamlit run gui.py --server.port 8502
-```
+---
 
-### Canned reports
+### Natural language search (GUI)
 
-Always available from the report menu — no typing needed:
-
-- Songs flagged for review
-- No-match songs by language
-- Unknown Year queue
-- Unknown Album queue
-- Language breakdown summary
-- Transliteration cache viewer
-
-### Natural language queries
-
-Type any question in plain English. Examples:
+A browser-based interface where you can ask questions about your library in plain English:
 
 ```
 show me all Tamil songs from 1981
 find everything by Ilaiyaraaja
-show songs where the album is unknown
 how many Hindi songs do I have
+show songs where the year is unknown
 ```
 
-Results include the file path so you can navigate directly to the file.
-For flagged songs, a suggested CLI command is shown to help you correct the issue.
+Requires a free Anthropic API key (set `ANTHROPIC_API_KEY`) and two extra packages:
 
-### Who this is for
+```
+pip install streamlit anthropic
+streamlit run gui.py
+```
 
-Sruthi is for anyone managing a large MP3 collection — particularly Tamil, Hindi, and other
-South Asian music from the pre-streaming era — where standard tools give poor metadata
-coverage. It is a command-line tool; basic terminal comfort is assumed. The GUI is an
-optional read-only layer on top; it does not replace the CLI.
+Then open the URL it prints (usually `http://localhost:8501`). Read-only — nothing in your library is changed.
 
 ---
 
-## Bugs and new features
+## Full command reference
 
-**Found a bug?** Open an issue at:
-```
-https://github.com/fordevices/sruthi/issues
-```
-Label it `bug`. Include: OS, Python version, the command you ran, and the relevant lines
-from `runs/<timestamp>/run.log`.
-
-**Want a new feature?** Open an issue at the same URL.
-Label it `enhancement`. Describe: what you want to do that you currently cannot.
-
-**Common candidates for future issues:**
-
-- Support for `.flac`, `.m4a`, `.ogg` files (not just `.mp3`)
-- Lyrics fetching and USLT tag writing
-- A simple web UI instead of the terminal review CLI
-- Batch export of `music.db` to CSV or JSON
-- AcoustID fallback auto-switch if ShazamIO stops working
-
-> Do not raise issues for ShazamIO breaking due to Shazam API changes —
-> that is an upstream dependency. See the "Fallback plan" section in README.md.
+| Command | What it does |
+|---|---|
+| `python3 main.py Input/` | Identify, tag, and move everything in Input/ |
+| `python3 main.py Input/Hindi/` | Same, but only the Hindi folder |
+| `python3 main.py Input/ --dry-run` | Preview only — nothing written or moved |
+| `python3 main.py Input/ --stage 1` | Identify only (no tagging or moving) |
+| `python3 main.py --move` | Tag and move all identified songs |
+| `python3 main.py --move --dry-run` | Preview what --move would do |
+| `python3 main.py --stats` | Show library summary — nothing changed |
+| `python3 main.py --check` | Verify the database is healthy |
+| `python3 main.py --multiprobe` | Re-try unmatched songs at 4 different positions via Shazam |
+| `python3 main.py --acrcloud` | ACRCloud identification pass (all unmatched songs) |
+| `python3 main.py --acrcloud --language Hindi` | ACRCloud — Hindi only |
+| `python3 main.py --acrcloud --limit 900` | ACRCloud — stop after 900 songs |
+| `python3 main.py --metadata-search` | iTunes search pass — interactive |
+| `python3 main.py --metadata-search --all` | Same but runs on already-identified songs too |
+| `python3 main.py --review` | Manually review unmatched songs |
+| `python3 main.py --review --flagged` | Review only songs with suspicious years |
+| `python3 main.py --review --all` | Review every song including matched ones |
+| `python3 main.py --review --limit N` | Review only the next N songs |
+| `python3 main.py --retry-no-match Input/` | Re-run Shazam on all unmatched songs |
+| `python3 main.py --mark-removed` | Mark unmatched songs whose files are gone from disk |
+| `python3 main.py --transliterate` | Transliterate artist names to native script |
+| `python3 main.py --transliterate --dry-run` | Preview transliterations |
+| `python3 main.py --zeroise` | Wipe the database and start fresh (asks for confirmation) |
+| `streamlit run gui.py` | Launch the natural language search GUI |
 
 ---
 
-## Fallback if ShazamIO breaks
+## What match rates to expect
 
-ShazamIO reverse-engineers Shazam's private API. If it ever stops working:
+| Music type | Shazam alone | With ACRCloud |
+|---|---|---|
+| Hindi film music 1985–2000 | 45–80% | 80–90% |
+| Hindi film music 1950–1984 | 15–40% | 55–75% |
+| Tamil film music 1990s–2010s | ~90% | ~95% |
+| Tamil film music 1970s–1980s | ~75% | ~85% |
+| English mainstream | 90%+ | — |
+| Obscure / regional / pre-1970 | 40–60% | varies |
 
-1. `pip install pyacoustid`
-2. Install Chromaprint:
-   - macOS: `brew install chromaprint`
-   - Linux: `sudo apt install libchromaprint-tools`
-   - Windows: download `fpcalc` from https://acoustid.org/chromaprint
-3. Register a free API key at https://acoustid.org (2 minutes, no payment required)
-4. Replace `pipeline/identify.py` with an AcoustID implementation
+Songs that remain unmatched after all passes are usually:
+- Very obscure or locally-released recordings never submitted to any database
+- Files shorter than 8 seconds
+- Corrupt or non-standard MP3 files
 
-The database schema, all other stages, the review CLI, and the folder structure are
-completely unchanged. Only Stage 1 needs to be swapped.
+---
 
-Match rate for Indian music will drop from ~86% to ~50–60% on older tracks.
+## Troubleshooting
+
+**"database is locked" error**
+You ran two Sruthi commands at the same time. Wait for the first one to finish before running another.
+
+**Run stopped partway through**
+Run the same command again. Sruthi will skip everything already processed and continue from where it left off.
+
+**Song identified with the wrong year**
+Run `python3 main.py --review --flagged` — this surfaces songs with implausible years (before 1940 or in the future) for you to correct. For other year errors, run `python3 main.py --review --all` and navigate to the song.
+
+**ACRCloud says "quota exceeded"**
+You have hit the 1,000/day free limit. Wait until midnight UTC (7 pm US Eastern) and run again. Use `--limit 900` to leave a buffer.
+
+**A file ended up in Music/Duplicates/**
+Sruthi found the same song already in your library. Open both copies, keep the better quality one, delete the other. The original stays in its normal location.
+
+**Songs moved to Music/Unknown Year/**
+Shazam or the other identification sources did not return a year for these songs. Run `python3 main.py --metadata-search --all --folder "Unknown Year"` to try filling in the gaps, or correct them via `--review --all`.
+
+---
+
+## Reporting bugs and requesting features
+
+Open an issue at **https://github.com/fordevices/sruthi/issues**
+
+For bugs, include: your OS, Python version, the command you ran, and the relevant lines from `runs/<timestamp>/run.log`.
